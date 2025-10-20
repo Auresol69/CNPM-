@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const mongoose = require("mongoose");
+const modelRoute = require("./routes/models.route")
 require("dotenv").config();
 
 const User = require("./models/user.model");
@@ -14,7 +15,6 @@ const Station = require("./models/station.model");
 const Student = require("./models/student.model");
 const Trip = require("./models/trip.model");
 const AppError = require("./utils/appError");
-const { selectAll, selectOne, createOne, updateOne, deleteOne } = require("./utils/handlerFactory")
 
 // --- DATABASE CONNECTION ---
 const { DB_URL, PORT } = process.env;
@@ -48,26 +48,17 @@ const models = {
     trips: Trip
 }
 
-// Middleware
+// Middleware to get the correct model based on the URL parameter
 const getModel = (req, res, next) => {
     const modelName = req.params.models.toLowerCase();
     req.Model = models[modelName] // if modelName = users => models[modelName] = User (object)
     if (!req.Model)
         return next(new AppError(`Model '${req.params.models}' not found`, 404));
-    console.log(req.Model);
+    console.log(`Request for model: ${req.Model.modelName}`);
     next();
 }
 
-app.get("/:models", getModel, (req, res, next) => selectAll(req.Model)(req, res, next));
-
-app.get("/:models/:id", getModel, (req, res, next) => selectOne(req.Model)(req, res, next));
-
-app.post("/:models", getModel, (req, res, next) => createOne(req.Model)(req, res, next));
-
-app.put("/:models/:id", getModel, (req, res, next) => updateOne(req.Model)(req, res, next));
-
-app.delete("/:models/:id", getModel, (req, res, next) => deleteOne(req.Model)(req, res, next));
-
+app.use("/:models", getModel, modelRoute);
 
 // Khong tim thay endpoint phu hop
 // This middleware will run for any request that didn't match a route above
