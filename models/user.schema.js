@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema({
         required: true,
         select: false
     },
-    refreshToken : [{
-        token:{
+    refreshToken: [{
+        token: {
             type: String,
             required: true
         },
@@ -38,12 +38,12 @@ const userSchema = new mongoose.Schema({
     }],
     role: {
         type: String,
-        enum: ['Admin','Manager','Parent','Driver'],
+        enum: ['Admin', 'Manager', 'Parent', 'Driver'],
         required: true
     }
 });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
     // Chỉ chạy hàm này nếu mật khẩu đã được thay đổi (hoặc là mới)
     if (!this.isModified('password')) return next();
 
@@ -53,11 +53,12 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// TTL (index + expireAfterSeconds)
-userSchema.index({"refreshToken.expiredAt": 1}, {expireAfterSeconds: 0});
+// Bug: vi se xoa luon ca document cha tuc la User
+// // TTL (index + expireAfterSeconds)
+// userSchema.index({"refreshToken.expiredAt": 1}, {expireAfterSeconds: 0});
 
 module.exports = userSchema;

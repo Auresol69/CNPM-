@@ -1,8 +1,11 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/user.model");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 require("dotenv").config();
+
+const MAX_SESSIONS = 5;
 
 const generateAccessToken = (id) => {
     return jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {
@@ -11,7 +14,11 @@ const generateAccessToken = (id) => {
 }
 
 const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.REFRESH_TOKEN_SECRET, {
+    const payload = {
+        id: id,
+        jti: crypto.randomUUID()// JWT id (Universally Unique Identifier - Định danh Duy nhất Toàn cầu)
+    };
+    return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
     })
 }
@@ -22,13 +29,24 @@ const sendTokenResponse = async (user, statusCode, res) => {
 
     const refreshTokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+    // Xoa cac token da qua han expiredAt
+    // Co 2 cach execute query: 1. await, 2. .exec()
+    User.updateOne(
+        { _id: user._id },
+        {
+            $pull: {
+                refreshToken: { expiredAt: { $lt: new Date() } }
+            }
+        }
+    ).exec();
+
     await User.updateOne(
         { _id: user._id },
         {
-            $addToSet: {
+            $push: {
                 refreshToken: {
-                    token: refreshToken,
-                    expiredAt: refreshTokenExpires
+                    $each: [{ token: refreshToken, expiredAt: refreshTokenExpires }],
+                    $slice: -MAX_SESSIONS
                 }
             }
         }
@@ -133,12 +151,12 @@ const logOut = catchAsync(async (req, res, next) => {
  * @param {import("express").Response} res
  * @param {import("express").NextFunction} next
  */
-const refreshToken = catchAsync( async (req, res, next) => {
+const refreshToken = catchAsync(async (req, res, next) => {
     const refreshToken = req.cookies.refreshToken
 
     if (!refreshToken)
         return next(new AppError('You are not logged in. Please log in to get access', 401));
-    
+
     let decode;
     try {
         decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
@@ -181,7 +199,7 @@ const authenticateToken = catchAsync(async (req, res, next) => {
     }
 
     const currentUser = await User.findById(decode.id);
-    if(!currentUser)
+    if (!currentUser)
         return next(new AppError('The user belonging to this token does no longer exist.', 401));
 
     // (Mo rong: Kiểm tra xem user có đổi mật khẩu sau khi token được cấp không)
