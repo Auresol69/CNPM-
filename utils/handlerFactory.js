@@ -27,7 +27,6 @@ const selectAll = (Model) => {
             status: "success",
             result: models.length,
             data: models,
-            // Gợi ý 2: Cung cấp thêm thông tin cho client
             pagination: {
                 totalResults: totalResults,
                 totalPages: totalPages,

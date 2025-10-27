@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const User = require("../models/user.model");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const permissions = require("../config/permissions");
 require("dotenv").config();
 
 const MAX_SESSIONS = 5;
@@ -197,6 +198,7 @@ const authenticateToken = catchAsync(async (req, res, next) => {
     next();
 });
 
+// Tam thoi khong dung vi qua general (chung chung)
 const restrictTo = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role))
@@ -205,4 +207,28 @@ const restrictTo = (...roles) => {
     }
 }
 
-module.exports = { signUp, signIn, logOut, refreshToken, authenticateToken, restrictTo }
+const checkPermissions = (req, res, next) => {
+
+    const modelName = req.params.models.toLowerCase();
+    const userRole = req.user.role;
+
+    let action;
+    const method = req.method;
+
+    const hasId = req.params.id !== undefined;
+
+    if (method === 'GET' && !hasId) action = 'readAll';
+    else if (method === 'GET' && hasId) action = 'readOne';
+    else if (method === 'PUT' || method === 'PATCH') action = 'update';
+    else if (method === 'POST') action = 'create';
+    else if (method === 'DELETE') action = 'delete';
+    else return next(new AppError('Invalid action.', 400));
+
+    const allowedRoles = permissions[modelName]?.[action];
+
+    if (!allowedRoles || !allowedRoles.includes(userRole))
+        return next(new AppError("You don't have permission to perform this action", 403));
+    next();
+};
+
+module.exports = { signUp, signIn, logOut, refreshToken, authenticateToken, restrictTo, checkPermissions }
