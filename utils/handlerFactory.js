@@ -67,16 +67,14 @@ const createOne = (Model) => {
 /** @param {import("mongoose").Model} Model */
 const updateOne = (Model) => {
     return catchAsync(async (req, res, next) => {
-        const doc = await Model.findByIdAndUpdate(req.params.id,
-            req.body,
-            {
-                new: true, // Trả về tài liệu sau khi cập nhật
-                runValidators: true // Chạy lại các hàm kiểm tra hợp lệ (validators) trên schema
-            }
-        )
+        const doc = await Model.findById(req.params.id);
 
         if (!doc)
             return next(new AppError(`No document found with that ID: ${req.params.id} in Collection: ${Model.modelName}`));
+
+        doc.set(req.body);
+
+        await doc.save();
 
         res.status(200).json({
             status: "success",

@@ -168,7 +168,7 @@ module.exports = (io) => {
 
                     if (trip.status !== 'NOT_STARTED') {
                         // Có thể không phải lỗi, chỉ cần báo là đã chạy rồi
-                        console.log(`Xe buýt ${busId} đã resume chuyến ${trip._id.toString()}`);
+                        console.log(`Xe buýt ${busId} đã RESUME chuyến ${trip._id.toString()}`);
                     } else {
                         // Tac vu bat buoc => MUST AWAIT (tranh race condition)
                         trip.status = 'IN_PROGRESS';
@@ -212,7 +212,90 @@ module.exports = (io) => {
 
             // Da toi 1 tram
             socket.on('driver:arrived_at_station', async (data) => {
+                const { stationId } = data;
+                const validatedTripId = socket.tripId;
 
+                if (!validatedTripId) {
+                    console.warn(`Xe buýt ${socket.bus.id} gửi sự kiện 'arrived' (đến trạm) nhưng chưa bắt đầu chuyến đi (start_trip). Bỏ qua.`);
+                    return;
+                }
+
+                // Ve Logic that su co station do trong schedule cua trip khong:
+                // Chi can trong trip.studentStops co chua stationId thi di nhien la co station do.
+                // 
+                try {
+                    const updateResult = await Trip.updateOne(
+                        {
+                            _id: validatedTripId,
+
+                            // Huong giai quyet logic tren
+                            'studentStops.stationId': stationId,
+
+                            // Va chua duoc them vao actualStopTimes
+                            'actualStopTimes.stationId': { $ne: stationId }
+                        },
+                        {
+                            $push: {
+                                actualStopTimes: {
+                                    stationId: stationId,
+                                    arrivalTime: new Date()
+                                }
+                            }
+                        }
+                    );
+
+                    // Kiểm tra xem update có thành công không
+                    if (updateResult.modifiedCount > 0) {
+                        console.log(`Đã ghi nhận xe ${socket.bus.id} đến trạm ${stationId} (Hợp lệ)`);
+                    } else {
+                        console.warn(`Bỏ qua ghi nhận trạm ${stationId} cho chuyến ${validatedTripId} (Trạm không hợp lệ hoặc đã tồn tại)`);
+                    }
+                } catch (error) {
+                    console.error(`Lỗi CSDL khi ghi nhận ĐẾN trạm ${stationId}:`, error);
+                    socket.emit('trip:error', 'Lỗi server khi ghi nhận đến trạm.');
+                }
+            });
+
+            // Da roi 1 tram
+            socket.on('driver:departed_from_station', async (data) => {
+                const { stationId } = data;
+                const validatedTripId = socket.tripId;
+
+                if (!validatedTripId) {
+                    console.warn(`Xe buýt ${socket.bus.id} gửi sự kiện 'departed' (rời trạm) nhưng chưa bắt đầu chuyến đi (start_trip). Bỏ qua.`);
+                    return;
+                }
+
+                try {
+                    const updateResult = await Trip.updateOne(
+                        {
+                            _id: validatedTripId,
+
+                            'actualStopTimes.stationId': stationId,
+
+                            // kỹ thuật gọi là "Idempotency" (tạm dịch: tính bất biến).
+                            // Nó đảm bảo rằng dù app của tài xế có gửi sự kiện departed 5 lần
+                            // (do lag, nhấn nhầm, retry...), server cũng chỉ cập nhật 1 lần duy nhất.
+                            // VD: Chỉ tìm phần tử mảng mà 'departureTime' chưa được set
+                            'actualStopTimes.departureTime': { $exists: false }
+                        },
+                        {
+                            $set: {
+                                'actualStopTimes.$.departureTime': new Date()
+                            }
+                        }
+                    );
+
+                    // Kiểm tra xem update có thành công không
+                    if (updateResult.modifiedCount > 0) {
+                        console.log(`Đã ghi nhận xe ${socket.bus.id} rời trạm ${stationId} (Hợp lệ)`);
+                    } else {
+                        console.warn(`Lỗi khi ghi nhận xe ${socket.bus.id} RỜI trạm ${stationId}:`);
+                    }
+                } catch (error) {
+                    console.error(`Lỗi CSDL khi ghi nhận RỜI trạm ${stationId}:`, error);
+                    socket.emit('trip:error', 'Lỗi server khi ghi nhận rời trạm.');
+                }
             });
 
             socket.on('disconnect', () => {
