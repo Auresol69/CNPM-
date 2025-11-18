@@ -9,3 +9,6 @@ nếu behind so vói repo
 # git add 
 
 # git push
+
+# git rm -rf ./ --force
+//Neu thay bat man voi truong nhom
