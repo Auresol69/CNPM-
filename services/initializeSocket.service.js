@@ -5,6 +5,7 @@ const Bus = require('../models/bus.model');
 const Location = require('../models/location.model');
 const Trip = require('../models/trip.model');
 const Student = require('../models/student.model');
+const { Haversine } = require('../utils/haversine');
 
 /**
  * Initializes Socket.IO event listeners and middleware.
@@ -188,28 +189,56 @@ module.exports = (io) => {
                 }
             });
 
-            // ⚠️ QUAN TRỌNG: Không cho join bất kỳ phòng nào cả
+            const MIN_DISTANCE_THRESHOLD = 0.005;
+            const DB_SAVE_INTERVAL_MS = 10000;
+
+            // QUAN TRỌNG: Không cho join bất kỳ phòng nào cả
             socket.on('driver:update_location', async (data) => {
-                // data format: {busId: '', coords: {latitude: '',longtitude: ''}}
+                // data format: {busId: '', coords: {latitude: '',longitude: ''}}
 
                 // Chỉ tin vào 'bus' đax được xác thực sau Middleware tren
                 const busId = socket.bus.id;
                 const validatedTripId = socket.tripId;
+                const newCoords = data.coords;
+                const currentTime = Date.now();
 
-                if (!validatedTripId) {
+                if (!validatedTripId)
                     return; // Bỏ qua nếu xe chưa bắt đầu chuyến (start_trip)
+
+                if (!socket.lastDbUpdatedTime)
+                    socket.lastDbUpdatedTime = currentTime;
+
+                if (!socket.prevCoords) {
+                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', newCoords);
+
+                    Bus.updateCurrentStatus(busId, newCoords)
+                        .catch(err => console.error(`Lỗi cập nhật status bus ${busId}:`, err));
+
+                    socket.lastDbUpdatedTime = currentTime;
+                    socket.prevCoords = newCoords;
+                    return;
                 }
 
-                // Uu tien 2 => KHONG DUNG await de tranh tac nghen
-                Bus.updateCurrentStatus(busId, data.coords)
-                    .catch(err => console.error(`Lỗi cập nhật status bus ${busId}:`, err));
 
-                // Uu tien 1
-                // Gui cho nhung ai dang trong phong live-map VA dang coi map
-                io.to(`trip_${validatedTripId}`).emit('bus:location_changed', data.coords);
+                // Chỉ xử lý và gửi đi khi tọa độ thực sự thay đổi
+                if (Haversine.distance(socket.prevCoords, newCoords) > MIN_DISTANCE_THRESHOLD) {
 
-                // Chi nen su dung khi can data len bao cao
-                // await Location.saveHistory(busId, data.coords);
+                    // Uu tien 1
+                    // Gui cho nhung ai dang trong phong live-map VA dang coi map
+                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', newCoords);
+
+                    // Uu tien 2 => KHONG DUNG await de tranh tac nghen
+                    if ((currentTime - socket.lastDbUpdatedTime) > DB_SAVE_INTERVAL_MS) {
+                        Bus.updateCurrentStatus(busId, newCoords)
+                            .catch(err => console.error(`Lỗi cập nhật status bus ${busId}:`, err));
+
+                        socket.lastDbUpdatedTime = currentTime;
+                    }
+
+                    // Chi nen su dung khi can data len bao cao
+                    // await Location.saveHistory(busId, data.coords);
+                    socket.prevCoords = newCoords;
+                }
             });
 
             // Da toi 1 tram

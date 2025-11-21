@@ -1,47 +1,50 @@
 exports = async function () {
     const service = context.services.get("SSB");
-
-    const db = service.db("SmartSchoolBus")
+    const db = service.db("SmartSchoolBus");
 
     const schedulesCollection = db.collection("schedules");
     const busesCollection = db.collection("buses");
     const tripsCollection = db.collection("trips");
 
-    // 1. Lấy thời điểm hiện tại (bắt đầu của ngày hôm nay)
-    // Để ý đến bất kỳ lịch trình nào chưa kết thúc (endDate >= hôm nay)
+    // 1. Setup ngày
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    console.log("------------- START DAILY JOB -------------");
+    console.log(`📅 Today (UTC Start of Day): ${today.toISOString()}`);
 
-    // 2. Tìm TẤT CẢ các busId "nên" ở trạng thái assigned
-    // Các busId có ít nhất 1 lịch trình (Schedule)
-    //    a. Đang "isActive: true"
-    //    b. VÀ "endDate" >= "hôm nay"
-
-    // distinct là một lệnh của MongoDB dùng để lấy ra một danh sách các giá trị duy nhất (không trùng lặp)
-    // của một trường (field) cụ thể, từ các document khớp với bộ lọc (filter)
-    const activeBusIds = await schedulesCollection.distinct("busId", {
+    // 2. Tìm Active Bus IDs
+    // Thêm điều kiện startDate <= today nếu muốn xe chỉ assigned khi lịch ĐÃ bắt đầu
+    const query = {
         "isActive": true,
         "endDate": { "$gte": today }
-    });
+    };
 
-    // 'activeBusIds' là một mảng, ví dụ:
-    // [ ObjectId('xe_A'), ObjectId('xe_C'), ObjectId('xe_D') ]
+    console.log(`🔍 Query tìm xe đang bận: ${JSON.stringify(query)}`);
 
-    // Lệnh A: Gán (Assign)
-    // Đặt isAssigned = true cho TẤT CẢ các xe có ID nằm trong danh sách 'activeBusIds'
+    // Lấy danh sách ID
+    const activeBusIds = await schedulesCollection.distinct("busId", query);
+    
+    console.log(`🚌 Tìm thấy ${activeBusIds.length} xe đang có lịch trình.`);
+    // Log ra danh sách ID để bạn copy check trong Database
+    console.log(`📋 Danh sách BusID Active: ${JSON.stringify(activeBusIds)}`);
+
+    // 3. Cập nhật Buses
+    // Lệnh A: Set True
     const assignResult = await busesCollection.updateMany(
         { "_id": { "$in": activeBusIds } },
         { "$set": { "isAssigned": true } }
     );
+    console.log(`✅ Set Assigned=TRUE: ${assignResult.modifiedCount} xe (Matched: ${assignResult.matchedCount})`);
 
-    // Lệnh B: Giải phóng (Un-assign)
-    // Đặt isAssigned = false cho TẤT CẢ các xe có ID KHÔNG nằm trong danh sách 'activeBusIds'
+    // Lệnh B: Set False
     const unassignResult = await busesCollection.updateMany(
-        { "_id": { "$nin": activeBusIds } }, // $nin = "not in"
+        { "_id": { "$nin": activeBusIds } },
         { "$set": { "isAssigned": false } }
     );
+    console.log(`🆓 Set Assigned=FALSE: ${unassignResult.modifiedCount} xe (Matched: ${unassignResult.matchedCount})`);
 
-    // Auto cancel trip khi trip do chua start va qua ngay.
+    // 4. Dọn dẹp Trips cũ
     const autoCancelledResult = await tripsCollection.updateMany(
         {
             "status": 'NOT_STARTED',
@@ -49,8 +52,8 @@ exports = async function () {
         },
         { "$set": { "status": 'CANCELLED' } }
     );
+    console.log(`🚫 Auto CANCELLED: ${autoCancelledResult.modifiedCount} chuyến.`);
 
-    // Auto complete trip khi tai xe quen bam done trip do va qua ngay.
     const autoCompletedResult = await tripsCollection.updateMany(
         {
             "status": 'IN_PROGRESS',
@@ -58,8 +61,12 @@ exports = async function () {
         },
         { "$set": { "status": 'COMPLETED' } }
     );
+    console.log(`🏁 Auto COMPLETED: ${autoCompletedResult.modifiedCount} chuyến.`);
+
+    console.log("------------- END JOB -------------");
 
     return {
+        activeBusIdsCount: activeBusIds.length,
         assigned: assignResult.modifiedCount,
         unassigned: unassignResult.modifiedCount,
         cancelledTrip: autoCancelledResult.modifiedCount,
