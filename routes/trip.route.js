@@ -44,6 +44,12 @@ route.patch(
     tripController.markAsAbsent
 );
 
+route.get(
+    '/:id',
+    restrictTo('Admin', 'Manager', 'Driver', 'Parent'),
+    tripController.getTrip
+);
+
 // === CÁC ROUTE VẪN SỬ DỤNG FACTORY (HOẶC CONTROLLER ĐÃ WRAP FACTORY) ===
 
 route.get(
@@ -52,11 +58,6 @@ route.get(
     tripController.getAllTrips
 );
 
-route.get(
-    '/:id',
-    restrictTo('Admin', 'Manager', 'Driver', 'Parent'),
-    tripController.getTrip
-);
 
 route.delete('/:id', restrictTo('Admin', 'Manager'), tripController.deleteTrip);
 

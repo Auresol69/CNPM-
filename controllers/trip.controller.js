@@ -9,8 +9,37 @@ const NotificationModel = require('../models/notification.model')
 
 // Sử dụng lại factory cho các hành động đơn giản
 exports.getAllTrips = factory.selectAll(Trip);
-exports.getTrip = factory.selectOne(Trip);
 exports.deleteTrip = factory.deleteOne(Trip);
+
+exports.getTrip = catchAsync(async (req, res, next) => {
+
+    const user = req.user;
+    let query = { _id: req.params.id };
+
+    if (req.user.role === 'Parent') {
+        const childrenIds = (await studentModel.find({ parentId: user.id }).select('_id')).map(s => s._id);
+
+        // Check xem có con mình ở trong trip đó không, thêm đk query
+        query['studentStops.studentId'] = { $in: childrenIds };
+    }
+    const trip = await Trip.findOne(query)
+        .populate({
+            path: 'scheduleId',
+            select: 'routeId stopTimes',
+            populate: {
+                path: 'routeId',
+                select: 'name shape distanceMeters durationSeconds'
+            }
+        });
+
+    if (!trip)
+        return next(new AppError('Không tìm thấy chuyến đi', 404));
+
+    res.status(200).json({
+        status: 'success',
+        data: trip
+    });
+});
 
 /**
  * Tạo một chuyến đi mới.
