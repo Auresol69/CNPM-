@@ -1,4 +1,4 @@
-exports = (timeString) => {
+module.exports = (timeString) => {
     const [hours, minutes] = timeString.split(':').map(Number);
 
     const date = new Date();
