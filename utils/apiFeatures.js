@@ -39,8 +39,8 @@ class APIFeatures {
         return this; // chaining, this = object APIFeatures moi
     }
 
-    // Mo rong (api/users?fields=name, email) 
     // Note: không cho phép trộn lẫn giữa việc "chọn lấy" (inclusion) và "loại bỏ" (exclusion)
+    // Mo rong (api/users?fields=name,email) 
     limitField() {
         if (this.queryString.fields) {
             const fields = this.queryString.fields.split(',').join(' ');
