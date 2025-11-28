@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/authService';
 import { UserIcon } from '../../components/parent/Icons';
@@ -21,6 +22,7 @@ interface UserProfile {
 }
 
 export default function ParentProfile() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,10 @@ export default function ParentProfile() {
                 </span>
             </div>
         </div>
-        <button className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
+        <button 
+            onClick={() => navigate('/parent/settings')}
+            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+        >
             Edit Profile
         </button>
       </div>
@@ -134,9 +139,7 @@ export default function ParentProfile() {
                           <span className="w-1 h-5 bg-orange-500 rounded-full"></span>
                           My Children ({students.length})
                       </h3>
-                      <button className="text-sm text-orange-600 font-medium hover:text-orange-700">
-                          + Add Child
-                      </button>
+
                   </div>
 
                   <div className="space-y-4">

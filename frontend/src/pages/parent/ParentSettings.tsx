@@ -41,17 +41,17 @@ export default function ParentSettings() {
       const user = authService.getCurrentUser();
       if (!user) throw new Error("User not found");
 
-      // Call API to update user info
-      // Note: Adjust the endpoint if your backend uses a different one for profile updates
-      await api.put(`/users/${(user as any)._id}`, generalForm);
-      
-      // Update local storage with new info (optional, but good for consistency)
-      const updatedUser = { ...user, ...generalForm };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // SIMULATE API CALL
+      // await api.put(`/users/${(user as any)._id}`, generalForm);
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Fake delay
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      // Update local storage with new info (optional, but good for consistency)
+      // const updatedUser = { ...user, ...generalForm };
+      // localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      setMessage({ type: 'success', text: 'Yêu cầu thay đổi thông tin đã được gửi lên hệ thống. Vui lòng chờ phê duyệt.' });
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.response?.data?.msg || 'Failed to update profile.' });
+      setMessage({ type: 'error', text: error.response?.data?.msg || 'Failed to send request.' });
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function ParentSettings() {
     setMessage(null);
 
     if (securityForm.newPassword !== securityForm.confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match.' });
+      setMessage({ type: 'error', text: 'Mật khẩu mới không khớp.' });
       setLoading(false);
       return;
     }
@@ -72,16 +72,16 @@ export default function ParentSettings() {
       const user = authService.getCurrentUser();
       if (!user) throw new Error("User not found");
 
-      // Call API to update password
-      // Backend usually handles password hashing if 'password' field is sent
-      await api.put(`/users/${(user as any)._id}`, {
-        password: securityForm.newPassword
-      });
+      // SIMULATE API CALL
+      // await api.put(`/users/${(user as any)._id}`, {
+      //   password: securityForm.newPassword
+      // });
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Fake delay
 
-      setMessage({ type: 'success', text: 'Password updated successfully!' });
+      setMessage({ type: 'success', text: 'Yêu cầu đổi mật khẩu đã được gửi lên hệ thống. Vui lòng chờ phê duyệt.' });
       setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.response?.data?.msg || 'Failed to update password.' });
+      setMessage({ type: 'error', text: error.response?.data?.msg || 'Failed to send request.' });
     } finally {
       setLoading(false);
     }
@@ -178,7 +178,7 @@ export default function ParentSettings() {
                 disabled={loading}
                 className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? 'Đang gửi...' : 'Gửi yêu cầu thay đổi'}
               </button>
             </div>
           </form>
@@ -226,7 +226,7 @@ export default function ParentSettings() {
                 disabled={loading}
                 className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Updating...' : 'Update Password'}
+                {loading ? 'Đang gửi...' : 'Gửi yêu cầu đổi mật khẩu'}
               </button>
             </div>
           </form>
