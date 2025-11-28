@@ -47,7 +47,8 @@ exports.createRoute = catchAsync(async (req, res, next) => {
         const orsResponse = await axios.post(
             'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
             {
-                coordinates: coordinates
+                coordinates: coordinates,
+                geometry_simplify: false
             },
             {
                 headers: {
