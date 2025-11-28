@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { BusIcon, DashboardIcon, MapIcon, BellIcon, UserIcon, LogOutIcon } from '../parent/Icons';
+import { BusIcon, DashboardIcon, MapIcon, BellIcon, UserIcon, LogOutIcon, SettingsIcon } from '../parent/Icons';
 import authService from '../../services/authService';
 import Header from '../parent/Header';
 import Footer from '../parent/Footer';
@@ -34,6 +34,7 @@ export default function Layout() {
     if (location.pathname.includes('tracking')) return 'Live Tracking';
     if (location.pathname.includes('notifications')) return 'Notifications';
     if (location.pathname.includes('profile')) return 'My Profile';
+    if (location.pathname.includes('settings')) return 'Settings';
     return 'School Bus';
   };
 
@@ -81,6 +82,20 @@ export default function Layout() {
           >
             <UserIcon className="w-4 h-4" />
             My Profile
+          </NavLink>
+          <NavLink
+            to="/parent/settings"
+            onClick={() => setIsSidebarOpen(false)}
+            className={({ isActive }) =>
+                `w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm font-medium ${
+                isActive
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`
+            }
+          >
+            <SettingsIcon className="w-4 h-4" />
+            Settings
           </NavLink>
           <button
             onClick={() => authService.logout()}

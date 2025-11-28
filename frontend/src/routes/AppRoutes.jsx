@@ -3,13 +3,13 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import ParentLayout from "../components/layout/ParentLayout";
-
 // --- Lazy loaded pages (one import per file) ---
 // Parent pages
 const ParentDashboard = lazy(() => import("../pages/parent/ParentDashboard"));
 const ParentTracking = lazy(() => import("../pages/parent/ParentTracking"));
 const ParentNotifications = lazy(() => import("../pages/parent/ParentNotifications"));
 const ParentProfile = lazy(() => import("../pages/parent/ParentProfile"));
+const ParentSettings = lazy(() => import("../pages/parent/ParentSettings"));
 const Login_Parents = lazy(() => import("../pages/parent/Login_Parents"));
 
 // Driver pages
@@ -56,6 +56,7 @@ export default function AppRoutes() {
             <Route path="tracking" element={<ParentTracking />} />
             <Route path="notifications" element={<ParentNotifications />} />
             <Route path="profile" element={<ParentProfile />} />
+            <Route path="settings" element={<ParentSettings />} />
           </Route>
 
           {/* Root layout for other roles or generic pages */}

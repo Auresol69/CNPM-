@@ -106,7 +106,7 @@ export default function ParentProfile() {
           <div className="md:col-span-1 space-y-6">
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                   <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <span className="w-1 h-5 bg-brand-500 rounded-full"></span>
+                      <span className="w-1 h-5 bg-orange-500 rounded-full"></span>
                       Contact Details
                   </h3>
                   <div className="space-y-4">
@@ -131,10 +131,10 @@ export default function ParentProfile() {
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                   <div className="flex items-center justify-between mb-6">
                       <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                          <span className="w-1 h-5 bg-brand-500 rounded-full"></span>
+                          <span className="w-1 h-5 bg-orange-500 rounded-full"></span>
                           My Children ({students.length})
                       </h3>
-                      <button className="text-sm text-brand-600 font-medium hover:text-brand-700">
+                      <button className="text-sm text-orange-600 font-medium hover:text-orange-700">
                           + Add Child
                       </button>
                   </div>
@@ -142,12 +142,12 @@ export default function ParentProfile() {
                   <div className="space-y-4">
                       {students.length > 0 ? (
                           students.map((student) => (
-                              <div key={student._id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all group">
+                              <div key={student._id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-orange-200 hover:bg-orange-50 transition-all group">
                                   <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl border border-slate-200">
                                       👶
                                   </div>
                                   <div className="flex-1">
-                                      <h4 className="font-bold text-slate-900 group-hover:text-brand-700 transition-colors">{student.name}</h4>
+                                      <h4 className="font-bold text-slate-900 group-hover:text-orange-700 transition-colors">{student.name}</h4>
                                       <p className="text-sm text-slate-500">Grade: {student.grade}</p>
                                   </div>
                                   <div className="text-right">
