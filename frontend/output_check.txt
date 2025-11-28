@@ -1,0 +1,9 @@
+﻿--- Kiß╗âm tra t├ái khoß║ún: 123123 ---
+1. ─Éang ─æ─âng nhß║¡p...
+Γ£à ─É─âng nhß║¡p TH├ÇNH C├öNG!
+Token: OK
+
+2. Kiß╗âm tra quyß╗ün Admin (Gß╗ìi API /routes)...
+Γ£à Gß╗ìi API /routes TH├ÇNH C├öNG!
+Dß╗» liß╗çu routes: Format kh├íc
+≡ƒæë T├ái khoß║ún n├áy C├ô QUYß╗ÇN Admin (hoß║╖c quyß╗ün xem routes).

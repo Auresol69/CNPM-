@@ -1,0 +1,61 @@
+=== KIỂM TRA API CHO PARENT UI ===
+Thời gian: 12:31:17 28/11/2025
+
+📝 BƯỚC 1: ĐĂNG NHẬP
+✅ Đăng nhập thành công!
+
+📊 BƯỚC 2: KIỂM TRA DỮ LIỆU
+
+✅ [QUAN TRỌNG] DANH SÁCH HỌC SINH
+   URL: /students
+   Số lượng: 2 item(s)
+   Preview: {"_id":"6900941e4f2f351cd995f770","name":"Nguyễn Văn A","grade":"Lớp 10A1","parentId":"690eb9a22d129...
+
+✅ [QUAN TRỌNG] DANH SÁCH LỘ TRÌNH
+   URL: /routes
+   Số lượng: 3 item(s)
+   Preview: {"distanceMeters":0,"durationSeconds":0,"_id":"6900903a6241339e89377ef8","name":"Tuyến 01 - Quận 1 -...
+
+✅ [QUAN TRỌNG] DANH SÁCH CHUYẾN ĐI
+   URL: /trips
+   Số lượng: 10 item(s)
+   Preview: {"nextStationIndex":0,"hasNotifiedApproaching":false,"hasNotifiedArrived":false,"_id":"69228d50bb269...
+
+✅ [QUAN TRỌNG] DANH SÁCH TRẠM DỪNG
+   URL: /stations
+   Số lượng: 6 item(s)
+   Preview: {"_id":"69008f3aa4d2ca70285c8739","name":"Trường THPT Nguyễn Huệ","address":{"street":"123 Lê Lợi","...
+
+✅ [Phụ] DANH SÁCH XE BUS
+   URL: /buses
+   Số lượng: 1 item(s)
+   Preview: {"currentLocation":{"latitude":10.761775,"longitude":106.682275,"timestamp":"2025-11-26T11:03:42.707...
+
+✅ [Phụ] LỊCH TRÌNH
+   URL: /schedules
+   Số lượng: 6 item(s)
+   Preview: {"_id":"69228d14bb269f2f66fd53f6","routeId":"6921fb230439bc229f8518ee","busId":"690630a466252bd8a403...
+
+✅ [Phụ] THÔNG BÁO
+   URL: /notifications
+   Số lượng: 1 item(s)
+   Preview: {"_id":"6926de604bc603e2e5d0227a","recipientId":"690eb9a22d129c676f165e08","contextStudentId":"69009...
+
+✅ [Phụ] NGƯỜI DÙNG
+   URL: /users
+   Số lượng: 6 item(s)
+   Preview: {"_id":"690dc0a65f4b50c002bd079e","name":"Roy","email":"admin@schoolbus.com","phoneNumber":"123123",...
+
+
+============================================================
+📋 TÓM TẮT KẾT QUẢ
+============================================================
+✅ Có dữ liệu: 8/8
+⚠️  Trống: 0/8
+❌ Lỗi: 0/8
+
+🎯 ĐÁNH GIÁ CHO PARENT UI:
+✅ TỐT: Tất cả API quan trọng đều có dữ liệu!
+   → Parent UI sẽ hoạt động bình thường.
+
+✅ Kiểm tra hoàn tất! Xem chi tiết tại: parent_api_test.txt

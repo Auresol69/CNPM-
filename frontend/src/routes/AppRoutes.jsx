@@ -2,16 +2,17 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PageLayout from "../components/layout/pagelayout";
+import ParentLayout from "../components/layout/ParentLayout";
 
 // --- Lazy loaded pages (one import per file) ---
 // Parent pages
 const ParentDashboard = lazy(() => import("../pages/parent/ParentDashboard"));
-const ParentFeatures = lazy(() => import("../pages/parent/ParentFeatures"));
-const ParentRoles = lazy(() => import("../pages/parent/ParentRoles"));
+// ParentProfile removed
 const ParentTracking = lazy(() => import("../pages/parent/ParentTracking"));
 const ParentNotifications = lazy(() =>
   import("../pages/parent/ParentNotifications")
 );
+const Login_Parents = lazy(() => import("../pages/parent/Login_Parents"));
 
 // Driver pages
 const DriverDashboard = lazy(() => import("../pages/driver/DriverDashboard"));
@@ -57,23 +58,25 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Suspense fallback={<Loader />}>
         <Routes>
-          {/* Root layout */}
+          {/* Standalone Parent Login */}
+          <Route path="/parent/login" element={<Login_Parents />} />
+
+          {/* Parent routes with dedicated layout */}
+          <Route path="/parent" element={<ParentLayout />}>
+            <Route path="" element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ParentDashboard />} />
+            {/* <Route path="profile" element={<ParentProfile />} /> */}
+            <Route path="tracking" element={<ParentTracking />} />
+            <Route path="notifications" element={<ParentNotifications />} />
+          </Route>
+
+          {/* Root layout for other roles or generic pages */}
           <Route path="/" element={<PageLayout />}>
             {/* path="" => simple landing or redirect to /parent/dashboard (adjust as desired) */}
             <Route
               path=""
-              element={<Navigate to="/parent/dashboard" replace />}
+              element={<Navigate to="/parent/login" replace />}
             />
-
-            {/* Parent routes */}
-            <Route path="parent">
-              <Route path="" element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<ParentDashboard />} />
-              <Route path="features" element={<ParentFeatures />} />
-              <Route path="roles" element={<ParentRoles />} />
-              <Route path="tracking" element={<ParentTracking />} />
-              <Route path="notifications" element={<ParentNotifications />} />
-            </Route>
 
             {/* Driver routes */}
             <Route path="driver">

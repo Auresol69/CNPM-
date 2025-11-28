@@ -1,0 +1,17 @@
+Logging in...
+Login successful. Token received.
+
+Testing endpoint: /students
+✅ Success [200]: {"status":"success","result":2,"data":[{"_id":"6900941e4f2f351cd995f770","name":"Nguyễn Văn A","grade":"Lớp 10A1","parentId":"690eb9a22d129c676f165e08","pickupStopId":"672b9a5c3e4f2a1b3c5d6e81","dropo...
+
+Testing endpoint: /students/my-students
+❌ Failed [500]: Internal Server Error
+
+Testing endpoint: /parents/students
+❌ Failed [404]: Not Found
+
+Testing endpoint: /parents/me/students
+❌ Failed [404]: Not Found
+
+Testing endpoint: /users/me
+❌ Failed [500]: Internal Server Error

@@ -1,0 +1,14 @@
+﻿--- KIß╗éM TRA TO├ÇN Bß╗ÿ API (Vß╗¢i quyß╗ün Admin) ---
+1. ─Éang ─æ─âng nhß║¡p...
+Γ£à ─É─âng nhß║¡p OK. Token sß║╡n s├áng.
+
+2. Kiß╗âm tra c├íc Endpoint:
+--------------------------------------------------
+Γ£à Routes (Lß╗Ö tr├¼nh)        : OK (200) - 3 items
+Γ£à Buses (Xe bu├╜t)          : OK (200) - 1 items
+Γ¥î Notifications (Th├┤ng b├ío): Lß╗ûI (403) - Request failed with status code 403
+Γ£à Students (Hß╗ìc sinh)      : OK (200) - 2 items
+Γ£à Schedules (Lß╗ïch tr├¼nh)   : OK (200) - 6 items
+Γ£à Trips (Chuyß║┐n ─æi)        : OK (200) - 10 items
+Γ£à Stations (Trß║ím dß╗½ng)     : OK (200) - 6 items
+--------------------------------------------------
