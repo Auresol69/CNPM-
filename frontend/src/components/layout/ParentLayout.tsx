@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BusIcon, DashboardIcon, MapIcon, BellIcon, UserIcon, LogOutIcon, SettingsIcon } from '../parent/Icons';
 import authService from '../../services/authService';
 import Header from '../parent/Header';
 import Footer from '../parent/Footer';
 import logo from '../../assets/logo.jpg';
 
-const SidebarItem = ({ to, icon: Icon, label, onClick }: { to: string; icon: any; label: string, onClick?: () => void }) => {
+const SidebarItem = ({ to, icon: Icon, label, onClick }: { to: string; icon: React.ElementType; label: string, onClick?: () => void }) => {
   return (
     <NavLink
       to={to}
@@ -28,6 +28,13 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }: { to: string; icon: any
 export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      navigate('/parent/login');
+    }
+  }, [navigate]);
 
   const getPageTitle = () => {
     if (location.pathname.includes('dashboard')) return 'Dashboard';
@@ -98,7 +105,10 @@ export default function Layout() {
             Settings
           </NavLink>
           <button
-            onClick={() => authService.logout()}
+            onClick={async () => {
+                await authService.logout();
+                navigate('/parent/login');
+            }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-sm font-medium"
           >
             <LogOutIcon className="w-4 h-4" />

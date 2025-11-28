@@ -47,11 +47,17 @@ const loginDemo = () => {
 /**
  * Logs out the user by removing the token and user data from localStorage.
  */
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  // Optional: Redirect to login page
-  // window.location.href = '/login';
+const logout = async () => {
+  try {
+    await api.delete('/auth/logout');
+  } catch (error) {
+    console.warn("Logout API call failed:", error);
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Optional: Redirect to login page
+    // window.location.href = '/parent/login';
+  }
 };
 
 /**

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 import { BusIcon } from '../../components/parent/Icons';
+import logo from '../../assets/logo.jpg';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function Login() {
       if (err.code === "ERR_NETWORK") {
         msg = 'Lỗi kết nối server. Server có thể đang khởi động (mất ~50s) hoặc bị chặn.';
       } else if (err.response?.status === 401 || err.response?.status === 400) {
-        msg = 'Sai thông tin đăng nhập. Vui lòng kiểm tra lại (123123 / 123).';
+        msg = 'Sai thông tin đăng nhập. Vui lòng kiểm tra lại (012012 / 123).';
       } else if (err.response?.data?.message) {
         msg = err.response.data.message;
       }
@@ -51,7 +52,7 @@ export default function Login() {
   };
 
   const fillCredentials = () => {
-    setFormData({ username: '123123', password: '123' });
+    setFormData({ username: '012012', password: '123' });
     setError('');
   };
 
@@ -60,17 +61,17 @@ export default function Login() {
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
         
         {/* Left Side - Hero / Brand */}
-        <div className="md:w-1/2 bg-brand-500 p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="md:w-1/2 bg-orange-500 p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
             {/* Decorative circles */}
             <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             <div className="absolute bottom-10 right-10 w-60 h-60 bg-black/5 rounded-full blur-3xl"></div>
 
             <div className="relative z-10">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white mb-6">
-                    <BusIcon className="w-7 h-7" />
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-lg overflow-hidden">
+                    <img src={logo} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-3xl font-bold text-white mb-2">Smart School Bus</h1>
-                <p className="text-brand-100">Hệ thống theo dõi xe đưa đón học sinh an toàn, tin cậy.</p>
+                <p className="text-orange-100">Hệ thống theo dõi xe đưa đón học sinh an toàn, tin cậy.</p>
             </div>
             
             <div className="relative z-10 mt-12">
@@ -105,7 +106,7 @@ export default function Login() {
               <input
                 type="text"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                 placeholder="VD: 123123"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -117,7 +118,7 @@ export default function Login() {
               <input
                 type="password"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -127,7 +128,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/30 transition-all transform active:scale-95 flex justify-center items-center ${
+              className={`w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-95 flex justify-center items-center ${
                 loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -146,9 +147,9 @@ export default function Login() {
                 <button
                     type="button"
                     onClick={fillCredentials}
-                    className="text-sm text-brand-600 font-medium hover:underline"
+                    className="text-sm text-orange-600 font-medium hover:underline"
                 >
-                    Điền thông tin mẫu (123123 / 123)
+                    Điền thông tin mẫu (012012 / 123)
                 </button>
                 
                 <div className="relative flex py-2 items-center">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import authService from '../../services/authService';
 import { BusIcon, SpeedIcon, MapIcon, UserIcon, BellIcon, SettingsIcon } from '../../components/parent/Icons';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -34,12 +35,17 @@ export default function Dashboard() {
         setLoading(true);
         // Try fetching real data
         try {
-            const res = await api.get('/students/my-students');
-            const students = res.data.data || res.data;
-            if (students && students.length > 0) {
-                setStudent(students[0]);
+            const user = authService.getCurrentUser();
+            if (user && (user as any)._id) {
+                const res = await api.get(`/students?parentId=${(user as any)._id}`);
+                const students = res.data.data || res.data;
+                if (students && students.length > 0) {
+                    setStudent(students[0]);
+                } else {
+                    setStudent(MOCK_STUDENT);
+                }
             } else {
-                setStudent(MOCK_STUDENT);
+                 setStudent(MOCK_STUDENT);
             }
         } catch (e) {
             console.warn("API Error, using mock:", e);
