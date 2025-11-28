@@ -75,7 +75,7 @@ const permissions = {
         delete: [ROLES.ADMIN]
     },
     trips: {
-        create: [ROLES.ADMIN, ROLES.MANAGER], // Example
+        create: [ROLES.ADMIN, ROLES.MANAGER],
         readAll: [ROLES.ADMIN, ROLES.MANAGER, ROLES.DRIVER, ROLES.PARENT],
         readOne: [ROLES.ADMIN, ROLES.MANAGER, ROLES.DRIVER, ROLES.PARENT],
         update: [ROLES.ADMIN, ROLES.MANAGER, ROLES.DRIVER],
@@ -89,7 +89,7 @@ const permissions = {
         delete: [ROLES.ADMIN]
     },
     locations: {
-        create: [ROLES.DRIVER], // Usually updated by driver/system
+        create: [ROLES.DRIVER],
         readAll: [ROLES.ADMIN],
         readOne: [ROLES.ADMIN, ROLES.MANAGER, ROLES.PARENT],
         update: [ROLES.ADMIN],

@@ -7,7 +7,9 @@ const modelRoute = require("./routes/models.route");
 const tripRoute = require("./routes/trip.route");
 const authRoute = require("./routes/auth.route");
 const routeRoute = require("./routes/route.route");
-const stationRoute = require("./routes/station.route")
+const stationRoute = require("./routes/station.route");
+const userRoute = require("./routes/user.route");
+const studentRoute = require("./routes/student.route");
 require("dotenv").config();
 
 const User = require("./models/user.model");
@@ -116,6 +118,8 @@ app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/trips", tripRoute);
 app.use("/api/v1/routes", routeRoute);
 app.use("/api/v1/stations", stationRoute);
+app.use("/api/v1/users", userRoute);
+app.use("/api/v1/students", studentRoute);
 
 // Route động (generic) phải được đăng ký SAU CÙNG
 app.use("/api/v1/:models", getModel, modelRoute);

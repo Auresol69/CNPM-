@@ -23,21 +23,24 @@ const userSchema = new mongoose.Schema({
         required: true,
         select: false
     },
-    refreshToken: [{
-        token: {
-            type: String,
-            required: true
-        },
-        // userAgent: String, Mo rong: Luu thong tin thiet bi, browser
-        createAt: {
-            type: Date,
-            default: Date.now
-        },
-        expiredAt: {
-            type: Date,
-            // TTL
-        }
-    }],
+    refreshToken: {
+        type: [{
+            token: {
+                type: String,
+                required: true
+            },
+            // userAgent: String, Mo rong: Luu thong tin thiet bi, browser
+            createAt: {
+                type: Date,
+                default: Date.now
+            },
+            expiredAt: {
+                type: Date,
+                // TTL
+            }
+        }],
+        select: false
+    },
     role: {
         type: String,
         // vá lỗ hổng "Mass Assignment" (Gán hàng loạt)
