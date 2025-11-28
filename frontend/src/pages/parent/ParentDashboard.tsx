@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { BusIcon, SpeedIcon, MapIcon, UserIcon } from '../../components/parent/Icons';
+import { BusIcon, SpeedIcon, MapIcon, UserIcon, BellIcon, SettingsIcon } from '../../components/parent/Icons';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -23,6 +24,7 @@ const customBusIcon = L.divIcon({
 });
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -147,17 +149,29 @@ export default function Dashboard() {
                     Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                    <button className="p-4 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-blue-100">
-                        <span className="text-2xl">📞</span> Call Driver
+                    <button 
+                        onClick={() => navigate('/parent/tracking')}
+                        className="p-4 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-blue-100"
+                    >
+                        <MapIcon className="w-6 h-6" /> Live Tracking
                     </button>
-                    <button className="p-4 bg-orange-50 text-orange-700 rounded-xl hover:bg-orange-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-orange-100">
-                        <span className="text-2xl">📅</span> Report Absence
+                    <button 
+                        onClick={() => navigate('/parent/notifications')}
+                        className="p-4 bg-orange-50 text-orange-700 rounded-xl hover:bg-orange-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-orange-100"
+                    >
+                        <BellIcon className="w-6 h-6" /> Notifications
                     </button>
-                    <button className="p-4 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-purple-100">
-                        <span className="text-2xl">💬</span> Message
+                    <button 
+                        onClick={() => navigate('/parent/profile')}
+                        className="p-4 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-purple-100"
+                    >
+                        <UserIcon className="w-6 h-6" /> My Profile
                     </button>
-                    <button className="p-4 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-slate-200">
-                        <span className="text-2xl">⚙️</span> Settings
+                    <button 
+                        onClick={() => navigate('/parent/settings')}
+                        className="p-4 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 hover:shadow-md transition-all text-sm font-medium flex flex-col items-center gap-2 border border-slate-200"
+                    >
+                        <SettingsIcon className="w-6 h-6" /> Settings
                     </button>
                 </div>
             </div>
