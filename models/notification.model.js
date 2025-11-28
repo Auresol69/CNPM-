@@ -19,4 +19,6 @@ const notificationSchema = new mongoose.Schema({
     versionKey: false
 });
 
+notificationSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model("Notification", notificationSchema);
