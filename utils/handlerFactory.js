@@ -43,7 +43,7 @@ const selectOne = (Model) => {
         const doc = await Model.findById(req.params.id)
 
         if (!doc)
-            return next(new AppError(`No document found with that ID: ${req.params.id} in Collection: ${Model.modelName}`));
+            return next(new AppError(`No document found with that ID: ${req.params.id} in Collection: ${Model.modelName}`, 404));
 
         res.status(200).json({
             status: "success",
@@ -70,7 +70,7 @@ const updateOne = (Model) => {
         const doc = await Model.findById(req.params.id);
 
         if (!doc)
-            return next(new AppError(`No document found with that ID: ${req.params.id} in Collection: ${Model.modelName}`));
+            return next(new AppError(`No document found with that ID: ${req.params.id} in Collection: ${Model.modelName}`, 404));
 
         doc.set(req.body);
 
