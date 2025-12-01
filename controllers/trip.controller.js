@@ -25,11 +25,20 @@ exports.getTrip = catchAsync(async (req, res, next) => {
     const trip = await Trip.findOne(query)
         .populate({
             path: 'scheduleId',
-            select: 'stopTimes'
+            select: 'stopTimes',
+            // 1. (Tùy chọn) hiển thị tên trạm trong danh sách giờ giấc
+            populate: {
+                path: 'stopTimes.stationId',
+                select: 'name'
+            }
         })
         .populate({
             path: 'routeId',
-            select: 'name shape distanceMeters durationSeconds'
+            select: 'name shape distanceMeters durationSeconds orderedStops',
+            populate: {
+                path: 'orderedStops',
+                select: 'name address'
+            }
         });
 
     if (!trip)
