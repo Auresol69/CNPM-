@@ -8,4 +8,6 @@ route.use(authenticateToken);
 
 route.patch('/:scheduleId/stopTimes/:stationId/students', scheduleController.AddStudents);
 
+route.get('/:id/route', scheduleController.getScheduleRoute);
+
 module.exports = route;

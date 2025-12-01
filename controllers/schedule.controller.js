@@ -58,3 +58,38 @@ exports.AddStudents = catchAsync(async (req, res, next) => {
         data: updateSchedule
     })
 });
+
+// GET /api/v1/schedules/:id/route
+exports.getScheduleRoute = catchAsync(async (req, res, next) => {
+   const scheduleId = req.params.id;
+   
+   const schedule = await Schedule.findById(scheduleId)
+   .populate({
+        path: 'routeId',
+        select: 'name orderedStops shape distanceMeters durationSeconds',
+        populate: {
+            path: 'orderedStops',
+            select: 'name address'
+        }
+    });
+
+    if (!schedule || !schedule.routeId) {
+        return next(new AppError('Không tìm thấy tuyến đường cho lịch trình này', 404));
+    }
+
+    const route = schedule.routeId;
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            routeName: route.name,
+            // Dữ liệu vẽ đường (Polyline)
+            shape: route.shape, 
+            // Dữ liệu vẽ trạm (Markers)
+            stops: route.orderedStops, 
+            // Thông tin phụ
+            distance: route.distanceMeters,
+            duration: route.durationSeconds
+        }
+    });
+});
