@@ -408,7 +408,12 @@ module.exports = (io) => {
 
                     // Uu tien 1
                     // Gui cho nhung ai dang trong phong live-map VA dang coi map
-                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', newCoords);
+                    // Mục đích Volatile:
+                    // Xe buýt gửi tọa độ A.
+                    // Phụ huynh mất mạng.
+                    // Xe buýt gửi B, C, D (với cờ volatile).
+                    // Server thấy phụ huynh đang offline -> VỨT LUÔN B, C, D. Không lưu trữ gì cả.
+                    io.to(`trip_${validatedTripId}`).volatile.emit('bus:location_changed', newCoords);
 
                     // Uu tien 2 => KHONG DUNG await de tranh tac nghen
                     if ((currentTime - socket.lastDbUpdatedTime) > DB_SAVE_INTERVAL_MS) {
