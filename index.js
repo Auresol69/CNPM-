@@ -1,5 +1,9 @@
 const express = require('express');
 const app = express();
+
+// Cho phép query phức tạp như ?price[gte]=100
+app.set('query parser', 'extended');
+
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const cors = require('cors');
@@ -12,6 +16,7 @@ const userRoute = require("./routes/user.route");
 const studentRoute = require("./routes/student.route");
 const notificationRoute = require("./routes/notification.route");
 const messageRoute = require("./routes/message.route");
+const scheduleRoute = require("./routes/schedule.route");
 require("dotenv").config();
 
 const User = require("./models/user.model");
@@ -126,6 +131,7 @@ app.use("/api/v1/users", userRoute);
 app.use("/api/v1/students", studentRoute);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/v1/messages", messageRoute);
+app.use("/api/v1/schedules", scheduleRoute);
 
 // Route động (generic) phải được đăng ký SAU CÙNG
 app.use("/api/v1/:models", getModel, modelRoute);
