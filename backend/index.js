@@ -36,7 +36,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const { DB_URL, PORT } = process.env;
 const port = PORT || 3000;
 
-const allowed = [ CLIENT_URL, 'http:localhost:5500', 'http://127.0.0.1:5500'];
+const allowed = [CLIENT_URL, 'http:localhost:5500', 'http://127.0.0.1:5500'];
 
 // CORS cho HTTP API
 app.use(cors({
@@ -78,7 +78,7 @@ mongoose.connect(DB_URL)
         console.log("Database connected successfully!");
         server.listen(port, () => {
             console.log(`🚀 App running on port ${port}...`);
-            console.log(`🔗 Client URL allowed: ${CLIENT_URL}`);
+            console.log(`🔗 Client URL allowed:${allowed.map(a => " " + a)}`);
         });
     })
     .catch((err) => {
