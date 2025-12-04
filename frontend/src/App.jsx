@@ -1,6 +1,18 @@
+// import React from 'react';
+// import AppRoutes from './routes/AppRoutes';
+
+// export default function App() {
+//   return <AppRoutes />;
+// }
+// src/App.jsx
 import React from 'react';
+import { RouteTrackingProvider } from './context/RouteTrackingContext';
 import AppRoutes from './routes/AppRoutes';
 
 export default function App() {
-  return <AppRoutes />;
+  return (
+    <RouteTrackingProvider>
+      <AppRoutes />
+    </RouteTrackingProvider>
+  );
 }

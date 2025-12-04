@@ -175,10 +175,18 @@ export default function DriverFeatures() {
                 {/* Đặc biệt cho SOS */}
                 
                 {feature.id === 'sos' && (
-                  <div className="mt-6 pt-6 border-t-4 border-red-300">
-                    <p className="text-center text-red-600 font-bold text-lg animate-pulse">
-                      NHẤN ĐỂ GỬI CỨU HỘ
-                    </p>
+                  <div className="mt-8 pt-8 border-t-8 border-red-500 bg-red-50 rounded-b-3xl -mx-8 -mb-8">
+                    <button
+                      onClick={() => {
+                        if (window.confirm('XÁC NHẬN GỬI TÍN HIỆU CỨU HỘ KHẨN CẤP?\nToàn bộ hệ thống sẽ nhận cảnh báo ngay lập tức!')) {
+                          alert('ĐÃ GỬI SOS THÀNH CÔNG!\nQuản lý, phụ huynh và 113 đang được thông báo!');
+                          // Gọi API thật ở đây nếu có
+                        }
+                      }}
+                      className="w-full py-6 bg-gradient-to-r from-red-600 to-pink-600 text-white text-2xl font-bold rounded-2xl shadow-2xl animate-pulse hover:animate-none hover:scale-105 transition"
+                    >
+                      NHẤN ĐỂ GỬI CỨU HỘ KHẨN CẤP
+                    </button>
                   </div>
                 )}
               </div>

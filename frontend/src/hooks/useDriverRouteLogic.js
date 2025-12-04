@@ -1,7 +1,6 @@
-// // src/hooks/useDriverRouteLogic.js
 // import { useEffect, useRef, useState, useCallback } from 'react';
 // import { getDistanceFromLatLonInMeters } from '../utils/distance';
-// import { socket } from '../utils/socket'; // Đảm bảo file trên tồn tại!
+// import { socket } from '../utils/socket';
 
 // const APPROACHING_THRESHOLD = 100;
 // const ARRIVED_THRESHOLD = 50;
@@ -16,12 +15,13 @@
 //   const watchIdRef = useRef(null);
 //   const approachingSentRef = useRef(false);
 
-//   const pushLog = useCallback((type, station = null, message = '') => {
+//   const pushLog = useCallback((type, station = null, extra = '') => {
 //     setLogs(prev => [{
 //       ts: Date.now(),
 //       type,
 //       station,
-//       message: message || type.replace('driver:', '').replace('_', ' ')
+//       message: extra || type.replace('driver:', '').replace('_', ' '),
+//       distance: type === 'driver:approaching_station' ? extra : undefined
 //     }, ...prev].slice(0, 200));
 //   }, []);
 
@@ -29,15 +29,11 @@
 //     if (socket.connected) {
 //       socket.emit(eventName, payload);
 //     } else {
-//       console.warn('Socket not connected, queuing:', eventName);
 //       socket.once('connect', () => socket.emit(eventName, payload));
 //     }
-//     pushLog(eventName, payload.station, payload.distance ? `~${payload.distance}m` : '');
-//   }, [pushLog]);
+//   }, []);
 
-//   const getNextStation = useCallback(() => {
-//     return routeStations[currentIndex + 1] || null;
-//   }, [routeStations, currentIndex]);
+//   const getNextStation = useCallback(() => routeStations[currentIndex + 1] || null, [routeStations, currentIndex]);
 
 //   const currentStation = routeStations[currentIndex] || null;
 //   const nextStation = getNextStation();
@@ -53,30 +49,23 @@
 
 //     const distance = getDistanceFromLatLonInMeters(lat, lng, nextStation.lat, nextStation.lng);
 
-//     // 1. Đến gần < 100m
 //     if (distance < APPROACHING_THRESHOLD && !approachingSentRef.current) {
-//       emit('driver:approaching_station', {
-//         station: nextStation,
-//         distance: Math.round(distance),
-//         timestamp: Date.now(),
-//       });
+//       emit('driver:approaching_station', { station: nextStation, distance: Math.round(distance) });
+//       pushLog('driver:approaching_station', nextStation, Math.round(distance) + 'm');
 //       approachingSentRef.current = true;
 //     }
 
-//     // 2. Đã đến trạm < 50m
 //     if (distance < ARRIVED_THRESHOLD && !isAtStation) {
-//       emit('driver:arrived_at_station', { station: nextStation, timestamp: Date.now() });
+//       emit('driver:arrived_at_station', { station: nextStation });
 //       setIsAtStation(true);
-//       pushLog('arrived', nextStation);
+//       pushLog('driver:arrived_at_station', nextStation);
 //     }
 
-//     // 3. Rời trạm ≥ 50m
 //     if (distance >= ARRIVED_THRESHOLD && isAtStation) {
-//       emit('driver:departed_at_station', { station: currentStation || nextStation, timestamp: Date.now() });
+//       emit('driver:departed_at_station', { station: currentStation || nextStation });
 //       setIsAtStation(false);
-//       pushLog('departed', currentStation || nextStation);
+//       pushLog('driver:departed_at_station', currentStation || nextStation);
 
-//       // Chuyển trạm
 //       setCurrentIndex(prev => {
 //         const next = prev + 1 < routeStations.length ? prev + 1 : prev;
 //         if (next !== prev) approachingSentRef.current = false;
@@ -86,14 +75,11 @@
 //   }, [emit, pushLog, nextStation, currentStation, isAtStation, routeStations.length]);
 
 //   const startTracking = useCallback(() => {
-//     if (!navigator.geolocation) {
-//       pushLog('error', null, 'Trình duyệt không hỗ trợ định vị');
-//       return;
-//     }
+//     if (!navigator.geolocation) return;
 
 //     if (isTracking) return;
 
-//     socket.connect(); // Đảm bảo kết nối
+//     socket.connect();
 
 //     const id = navigator.geolocation.watchPosition(
 //       onPosition,
@@ -161,8 +147,8 @@ export default function useDriverRouteLogic(routeStations = []) {
       ts: Date.now(),
       type,
       station,
-      message: extra || type.replace('driver:', '').replace('_', ' '),
-      distance: type === 'driver:approaching_station' ? extra : undefined
+      message: extra || type.replace('driver:', '').replace('_', ' ').replace('_', ' '),
+      distance: typeof extra === 'string' && extra.includes('m') ? extra : undefined
     }, ...prev].slice(0, 200));
   }, []);
 
@@ -174,7 +160,9 @@ export default function useDriverRouteLogic(routeStations = []) {
     }
   }, []);
 
-  const getNextStation = useCallback(() => routeStations[currentIndex + 1] || null, [routeStations, currentIndex]);
+  const getNextStation = useCallback(() => 
+    routeStations[currentIndex + 1] || null, 
+  [routeStations, currentIndex]);
 
   const currentStation = routeStations[currentIndex] || null;
   const nextStation = getNextStation();
@@ -192,7 +180,7 @@ export default function useDriverRouteLogic(routeStations = []) {
 
     if (distance < APPROACHING_THRESHOLD && !approachingSentRef.current) {
       emit('driver:approaching_station', { station: nextStation, distance: Math.round(distance) });
-      pushLog('driver:approaching_station', nextStation, Math.round(distance) + 'm');
+      pushLog('driver:approaching_station', nextStation, `${Math.round(distance)}m`);
       approachingSentRef.current = true;
     }
 
@@ -216,7 +204,10 @@ export default function useDriverRouteLogic(routeStations = []) {
   }, [emit, pushLog, nextStation, currentStation, isAtStation, routeStations.length]);
 
   const startTracking = useCallback(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      alert('Trình duyệt không hỗ trợ định vị!');
+      return;
+    }
 
     if (isTracking) return;
 
