@@ -291,7 +291,7 @@ export default function Tracking() {
                 👨‍✈️
               </div>
               <div>
-                <p className="font-bold text-slate-900">{activeTrip?.driverId?.name || 'Nguyen Van Tai'}</p>
+                <p className="font-bold text-slate-900">{activeTrip?.driverId?.name || 'Nguyễn Văn Tài'}</p>
                 <p className="text-sm text-slate-500">{activeTrip?.driverId?.phoneNumber || '0909 123 456'}</p>
               </div>
             </div>

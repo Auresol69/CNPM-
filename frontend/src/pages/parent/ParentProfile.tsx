@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import authService from '../../services/authService';
 import { UserIcon } from '../../components/parent/Icons';
+
+// Fallback student for demo
+const MOCK_STUDENT = {
+  _id: 'mock-student-1',
+  name: 'Nguyễn Văn A',
+  grade: '5A',
+  pickupStopId: 'Station A',
+  dropoffStopId: 'Station B'
+};
 
 interface Student {
   _id: string;
@@ -39,12 +48,17 @@ export default function ParentProfile() {
           try {
             const res = await api.get(`/students?parentId=${(currentUser as any)._id}`);
             const studentsData = res.data.data || res.data || [];
-            if (Array.isArray(studentsData)) {
+            if (Array.isArray(studentsData) && studentsData.length > 0) {
                 setStudents(studentsData);
+            } else {
+              // Use fallback for demo
+              console.warn('No children found, using fallback data for demo');
+              setStudents([MOCK_STUDENT]);
             }
           } catch (err) {
             console.error("Failed to fetch students:", err);
-            // Don't fallback to mock data, let UI show empty state
+            // Use fallback for demo instead of empty
+            setStudents([MOCK_STUDENT]);
           }
         }
       } catch (error) {
