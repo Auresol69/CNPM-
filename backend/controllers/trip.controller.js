@@ -296,10 +296,12 @@ exports.checkInWithFace = catchAsync(async (req, res, next) => {
     formData.append('known_faces', JSON.stringify(knownFacesList));
 
     const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:3000';
+    console.log('🔍 PYTHON_URL:', PYTHON_URL); // Debug log
 
     let studentId;
     let evidenceUrl;
     try {
+        console.log('📡 Calling:', `${PYTHON_URL}/recognize`); // Debug log
         const [aiResponse, cloudUrl] = await Promise.all([
             axios.post(`${PYTHON_URL}/recognize`, formData, {
                 headers: {
@@ -312,6 +314,9 @@ exports.checkInWithFace = catchAsync(async (req, res, next) => {
         studentId = aiResponse.data.data.studentId;
         evidenceUrl = cloudUrl;
     } catch (error) {
+        console.error('❌ Error calling Python service:', error.message); // Debug log
+        console.error('❌ Error details:', error.code, error.response?.status); // Debug log
+        
         // Nếu lỗi đến từ service Python (có response trả về)
         if (error.response && error.response.data) {
             // Service Python có thể trả về lỗi với key là 'error' hoặc 'message'
