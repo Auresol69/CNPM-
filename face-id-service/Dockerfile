@@ -1,33 +1,30 @@
-# 1. Dùng bản Bullseye (Ổn định nhất cho dlib/opencv)
+# Dùng bản Python 3.9 Slim
 FROM python:3.9-slim-bullseye
 
-# 2. Thiết lập môi trường để không bị hỏi Yes/No khi cài
-ENV DEBIAN_FRONTEND=noninteractive
-
-# 3. Cài đặt thư viện hệ thống (Thêm clean và fix-missing để chống lỗi mạng)
-RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
-    cmake \
-    build-essential \
+# 1. Cài thư viện hệ thống CƠ BẢN (Chỉ để chạy, không phải để build)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Setup App
 WORKDIR /app
 
-# 5. Copy và cài đặt thư viện
+# 2. Tải file dlib đã biên dịch sẵn (Bỏ qua bước compile tốn RAM)
+# Link này chứa file .whl cho Linux x86_64 (Render dùng kiến trúc này)
+RUN wget https://github.com/davisking/dlib/releases/download/v19.22/dlib-19.22.99-cp39-cp39-linux_x86_64.whl
+
+# 3. Cài dlib từ file vừa tải
+RUN pip install dlib-19.22.99-cp39-cp39-linux_x86_64.whl
+
+# 4. Cài các thư viện còn lại
 COPY requirements.txt .
+# Quan trọng: Loại bỏ dlib khỏi requirements.txt trước khi chạy lệnh này để tránh nó cài lại
+RUN grep -v "dlib" requirements.txt > req_no_dlib.txt && \
+    pip install --no-cache-dir -r req_no_dlib.txt
 
-# 6. Cài thư viện Python (Tăng timeout để tải dlib 100MB không bị ngắt)
-RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
-
-# 7. Copy code
 COPY . .
 
-# 8. Mở port (Render sẽ tự map port này)
 EXPOSE 5000
 
-# 9. Tăng timeout cho Gunicorn (để AI có thời gian xử lý ảnh nặng)
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app", "--timeout", "120"]
