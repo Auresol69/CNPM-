@@ -48,7 +48,7 @@ exports.registerStudentFace = catchAsync(async (req, res, next) => {
     const formData = new FormData();
     formData.append('file', req.file.buffer, req.file.originalname);
 
-    const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:5000';
+    const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:3000';
 
     let encoding;
     let imageUrl;

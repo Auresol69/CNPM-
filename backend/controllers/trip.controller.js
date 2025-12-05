@@ -295,7 +295,7 @@ exports.checkInWithFace = catchAsync(async (req, res, next) => {
     // '[{"studentId":"123", "encoding": [...]}]'
     formData.append('known_faces', JSON.stringify(knownFacesList));
 
-    const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:5000';
+    const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:3000';
 
     let studentId;
     let evidenceUrl;
