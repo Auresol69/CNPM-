@@ -1,8 +1,8 @@
 // src/api/apiClient.js
 import axios from "axios";
 
-// Backend đang chạy trên port 5173 (theo backend/index.js)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5173/api/v1";
+// Backend production URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://smart-school-bus-api.onrender.com/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

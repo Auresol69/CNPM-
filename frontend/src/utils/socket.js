@@ -19,8 +19,8 @@
 // src/utils/socket.js
 import { io } from 'socket.io-client';
 
-// Backend Socket.IO server đang chạy trên port 5173 (theo backend/index.js)
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5173';
+// Backend Socket.IO production server
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://smart-school-bus-api.onrender.com';
 
 export const socket = io(SOCKET_URL, {
   autoConnect: false,

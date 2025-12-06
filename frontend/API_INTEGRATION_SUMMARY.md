@@ -3,7 +3,7 @@
 ## ✅ HOÀN THÀNH TẤT CẢ 8 BƯỚC
 
 ### 📦 **1. Setup API Configuration**
-- ✅ Thống nhất BASE_URL: `http://localhost:5173/api/v1`
+- ✅ Thống nhất BASE_URL: `https://smart-school-bus-api.onrender.com/api/v1`
 - ✅ Axios interceptor cho authentication
 - ✅ Global error handling
 - ✅ File: `frontend/src/api/apiClient.js`
@@ -157,7 +157,7 @@
 
 ## 📋 **API ENDPOINTS MAP**
 
-### Backend URL: `http://localhost:5173/api/v1`
+### Backend URL: `https://smart-school-bus-api.onrender.com/api/v1`
 
 | Service | Endpoints | Hoàn thành |
 |---------|-----------|-----------|
@@ -192,9 +192,9 @@ npm install
 npm run dev
 ```
 
-### 4. Backend phải chạy trên
+### 4. Backend đang chạy trên
 ```
-http://localhost:5173
+https://smart-school-bus-api.onrender.com
 ```
 
 ---
