@@ -17,23 +17,8 @@
 
 // export default api;
 // src/services/api.js
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'http://localhost:3001/api/v1', // Thay bằng URL backend của bạn
-  timeout: 10000,
-});
-
-// Tự động gắn token vào mọi request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token'); // hoặc sessionStorage
-  if (token) {
-    config.headers.Authorization = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
-  }
-  return config;
-});
+// ⚠️ DEPRECATED: Sử dụng apiClient.js thay thế
+// File này giữ lại để tương thích ngược với code cũ
+import api from '../api/apiClient';
 
 export default api;

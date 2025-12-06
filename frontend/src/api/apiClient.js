@@ -1,7 +1,8 @@
 // src/api/apiClient.js
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api/v1"; // Thay bằng URL thật khi deploy
+// Backend đang chạy trên port 3000 (theo backend/index.js)
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
