@@ -20,24 +20,20 @@ const turf = require('@turf/turf');
 module.exports = (io) => {
     // Middleware truoc khi khoi tao ket noi
     io.use(async (socket, next) => {
-        // let token = socket.handshake.auth.token; // Mo rong chua co
+        const apiKey = socket.handshake.auth?.apiKey;
 
-        const apiKey = socket.handshake.auth.apiKey;
+        // Accept token from multiple handshake locations because WebSocket transport
+        // does not always forward headers (e.g., mobile, certain proxies).
+        const authHeader = socket.handshake.headers?.authorization;
+        const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
+        const tokenFromAuth = socket.handshake.auth?.token;
+        const queryTokenRaw = socket.handshake.query?.token;
+        const tokenFromQuery = Array.isArray(queryTokenRaw) ? queryTokenRaw[0] : queryTokenRaw;
 
-        // handshake: Là một đối tượng chứa thông tin về "cái bắt tay" (handshake) ban đầu — tức là quá trình thiết lập kết nối. 
-        // Nó chứa mọi thứ về request HTTP(S) ban đầu, bao gồm headers, địa chỉ IP, và query parameters.
-        const authHeader = socket.handshake.headers['authorization'];
+        const token = tokenFromAuth || tokenFromQuery || tokenFromHeader;
 
         try {
-            if (authHeader) {
-                let token;
-
-                if (authHeader.startsWith('Bearer '))
-                    token = authHeader.split(' ')[1];
-
-                if (!token)
-                    return next(new AppError('Authentication error: Token not provided.', 401));
-
+            if (token) {
                 let decode;
                 try {
                     decode = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
