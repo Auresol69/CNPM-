@@ -9,7 +9,9 @@ import { logOut as apiLogOut, refreshToken as apiRefreshToken, signIn as apiSign
 export const signUp = async (userData) => {
   try {
     const response = await apiSignUp(userData);
-    const { token, data } = response.data;
+    // Backend returns accessToken instead of token
+    const { accessToken, data } = response.data;
+    const token = accessToken;
     
     if (token) {
       localStorage.setItem('token', token);
@@ -18,29 +20,24 @@ export const signUp = async (userData) => {
     
     return { token, user: data.user };
   } catch (error) {
-    throw new Error(error.message || 'Đăng ký thất bại');
+    throw error;
   }
 };
 
 /**
  * Đăng nhập
- * @param {Object} credentials - { email, password } hoặc { phone, password }
+ * @param {Object} credentials - { username, password }
  * @returns {Promise<Object>} - { token, user }
  */
 export const signIn = async (credentials) => {
   try {
-    // Chuyển đổi email thành phone nếu là số điện thoại
-    const loginData = { ...credentials };
-    if (loginData.email && /^[0-9]+$/.test(loginData.email)) {
-      loginData.phone = loginData.email;
-      delete loginData.email;
-    }
-    
-    console.log('Sending login request with data:', loginData);
-    const response = await apiSignIn(loginData);
+    console.log('Sending login request with data:', credentials);
+    const response = await apiSignIn(credentials);
     console.log('Login response:', response.data);
     
-    const { token, data } = response.data;
+    // Backend returns accessToken instead of token
+    const { accessToken, data } = response.data;
+    const token = accessToken;
     
     if (token) {
       localStorage.setItem('token', token);

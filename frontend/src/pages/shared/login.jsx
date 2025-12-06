@@ -6,7 +6,7 @@ import { signIn } from '../../services/authService';
 export default function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -58,16 +58,16 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email hoặc Số điện thoại
+              Tên đăng nhập
             </label>
             <input
               type="text"
-              name="email"
-              value={formData.email}
+              name="username"
+              value={formData.username}
               onChange={handleChange}
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="email@example.com hoặc 0123456789"
+              placeholder="Nhập tên đăng nhập"
             />
           </div>
 
@@ -102,10 +102,9 @@ export default function Login() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo accounts:</p>
-          <p className="mt-1">Driver: driver@test.com</p>
-          <p>Parent: parent@test.com</p>
-          <p>Manager: manager@test.com</p>
+          <p>Tài khoản demo:</p>
+          <p className="mt-1">Username: 0123456789</p>
+          <p>Password: Driver@123</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Login</title>
+</head>
+<body>
+    <h1>Test Backend API</h1>
+    <button onclick="testLogin1()">Test 1: {phone, password}</button>
+    <button onclick="testLogin2()">Test 2: {email, password}</button>
+    <button onclick="testLogin3()">Test 3: Both fields</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_URL = 'https://smart-school-bus-api.onrender.com/api/v1';
+        
+        async function testLogin1() {
+            try {
+                const response = await fetch(`${API_URL}/auth/signin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: '0123456789',
+                        password: 'Driver@123'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = 'Test 1 Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Test 1 Error:\n' + error.message;
+            }
+        }
+
+        async function testLogin2() {
+            try {
+                const response = await fetch(`${API_URL}/auth/signin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'buihuykhai@gmail.com',
+                        password: 'Driver@123'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = 'Test 2 Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Test 2 Error:\n' + error.message;
+            }
+        }
+
+        async function testLogin3() {
+            try {
+                const response = await fetch(`${API_URL}/auth/signin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'buihuykhai@gmail.com',
+                        phone: '0123456789',
+                        password: 'Driver@123'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = 'Test 3 Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Test 3 Error:\n' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
