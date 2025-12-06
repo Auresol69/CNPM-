@@ -165,23 +165,75 @@ export default function ParentSettings() {
         </div>
       )}
 
-      {/* Account Info Card */}
+      {/* Account Info Card - Editable */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Thông tin tài khoản</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-slate-100">
-            <span className="text-sm text-slate-500">Họ và tên</span>
-            <span className="text-sm font-medium text-slate-900">{userInfo.name}</span>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          setLoading(true);
+          setMessage(null);
+          try {
+            // BACKENDSPECS LINE 55: PATCH /users/me
+            const res = await api.patch('/users/me', {
+              name: userInfo.name,
+              // avatar: userInfo.avatar // Optional: Add avatar input if needed
+            });
+            
+            // Update local storage user info if needed
+            const currentUser = authService.getCurrentUser();
+            if (currentUser) {
+              const updatedUser = { ...currentUser, name: userInfo.name };
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+
+            setMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
+          } catch (error: any) {
+            console.error('Update profile failed:', error);
+            setMessage({ type: 'error', text: error.response?.data?.message || 'Cập nhật thất bại' });
+          } finally {
+            setLoading(false);
+          }
+        }}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Họ và tên</label>
+              <input 
+                type="text" 
+                value={userInfo.name}
+                onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email (Không thể thay đổi)</label>
+              <input 
+                type="email" 
+                value={userInfo.email}
+                disabled
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Số điện thoại (Không thể thay đổi)</label>
+              <input 
+                type="text" 
+                value={userInfo.phoneNumber}
+                disabled
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+              />
+            </div>
+            
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 disabled:opacity-50"
+              >
+                {loading ? 'Lưu thay đổi' : 'Cập nhật hồ sơ'}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center justify-between py-2 border-b border-slate-100">
-            <span className="text-sm text-slate-500">Email</span>
-            <span className="text-sm font-medium text-slate-900">{userInfo.email}</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-slate-500">Số điện thoại</span>
-            <span className="text-sm font-medium text-slate-900">{userInfo.phoneNumber}</span>
-          </div>
-        </div>
+        </form>
       </div>
 
       {/* Theme Settings Card */}

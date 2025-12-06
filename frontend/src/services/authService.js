@@ -15,6 +15,8 @@ const login = async (credentials) => {
     if (response.data && response.data.accessToken) {
       const { accessToken, data } = response.data;
       
+      console.log("siuu ",response.data);
+
       // Store the token and user info in localStorage. We'll use the key 'token' internally for consistency.
       localStorage.setItem('token', accessToken);
       if (data && data.user) {

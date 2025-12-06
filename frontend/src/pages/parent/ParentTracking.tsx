@@ -87,76 +87,66 @@ export default function Tracking() {
   const [currentRouteIndex, setCurrentRouteIndex] = useState(0);
   const [routePathIndex, setRoutePathIndex] = useState(0);
   
-  // Current Display Data - use real route if available, otherwise simulation
-  const currentRoute = routePath.length > 0 ? routePath : MOCK_ROUTES[currentRouteIndex].path;
-  const currentPoint = routePath.length > 0 && routePathIndex < routePath.length 
-    ? routePath[routePathIndex] 
-    : MOCK_ROUTES[currentRouteIndex].path[routePathIndex];
-  const [busLocation, setBusLocation] = useState<Coordinate>({ lat: currentPoint[0], lng: currentPoint[1] });
+  // Initialize bus location with first point of first mock route
+  const initialPoint = MOCK_ROUTES[0].path[0];
+  const [busLocation, setBusLocation] = useState<Coordinate>({ 
+    lat: initialPoint[0], 
+    lng: initialPoint[1] 
+  });
 
   // Socket
   const socket = useSocket();
+  
+  // Computed: current route to display (API data or simulation)
+  const currentRoute = routePath.length > 0 ? routePath : MOCK_ROUTES[currentRouteIndex].path;
 
-  // 1. Initial Setup: Fetch Trip
+  // 1. Initial Setup: Fetch Trip - Simplified for stability
   useEffect(() => {
     const fetchTrip = async () => {
       try {
-        const response = await api.get('/trips/my-schedule');
-        const trips = response.data.data || response.data || [];
-        const current = trips.find((t: any) => t.status === 'IN_PROGRESS');
-        if (current) {
-          setActiveTrip(current);
-          // Fetch trip details to get stops
-          if (current._id) {
-            fetchTripDetails(current._id);
+        // Try known trip ID directly
+        const KNOWN_TRIP_ID = '69333192d3adea87130c7fc7';
+        console.log('📦 Trying direct trip fetch:', KNOWN_TRIP_ID);
+        
+        const response = await api.get(`/trips/${KNOWN_TRIP_ID}`);
+        const tripData = response.data.data || response.data;
+        
+        if (tripData) {
+          console.log('✅ Trip found:', tripData._id);
+          setActiveTrip(tripData);
+          
+          // Try to get route if routeId is available
+          const routeId = typeof tripData.routeId === 'string' ? tripData.routeId : tripData.routeId?._id;
+          if (routeId) {
+            try {
+              console.log('🔗 Fetching route:', routeId);
+              const routeRes = await api.get(`/routes/${routeId}`);
+              const routeData = routeRes.data.data || routeRes.data;
+              
+              if (routeData?.shape?.coordinates) {
+                const coords = routeData.shape.coordinates;
+                const shape = coords.map((c: number[]) => [c[1], c[0]] as [number, number]);
+                console.log('✅ Route loaded:', shape.length, 'points');
+                setRoutePath(shape);
+                setRoutePathIndex(0);
+                setBusLocation({ lat: shape[0][0], lng: shape[0][1] });
+                setIsSimulation(false);
+                return;
+              }
+            } catch (routeErr) {
+              console.warn('Route fetch failed, using simulation');
+            }
           }
         }
       } catch (error) {
-        console.warn("Could not fetch active trip, running in demo mode.");
+        console.warn('Trip fetch failed, using simulation mode');
       }
+      // Fallback to simulation
+      setIsSimulation(true);
     };
+    
     fetchTrip();
   }, []);
-
-  // Fetch trip details including route and stops per BackendSpecs
-  const fetchTripDetails = async (tripId: string) => {
-    try {
-      const response = await api.get(`/trips/${tripId}`);
-      const tripData = response.data.data || response.data;
-      
-      if (tripData) {
-        // Map route coordinates from scheduleId.routeId.shape.coordinates
-        // Backend returns [Lng, Lat], need to reverse to [Lat, Lng] for Leaflet
-        if (tripData.scheduleId?.routeId?.shape?.coordinates) {
-          const coords = tripData.scheduleId.routeId.shape.coordinates;
-          const reversedCoords = coords.map((coord: [number, number]) => [coord[1], coord[0]] as [number, number]);
-          setRoutePath(reversedCoords);
-          setIsSimulation(false); // Use real route
-        }
-
-        // Map stops from scheduleId.stopTimes
-        if (tripData.scheduleId?.stopTimes) {
-          const mappedStops = tripData.scheduleId.stopTimes.map((stopTime: any) => ({
-            stopId: {
-              _id: stopTime.stationId._id,
-              name: stopTime.stationId.name,
-              latitude: stopTime.stationId.latitude,
-              longitude: stopTime.stationId.longitude
-            },
-            arrivalTime: stopTime.arrivalTime,
-            schedule: {
-              arrivalTime: stopTime.arrivalTime
-            }
-          }));
-          setStops(mappedStops);
-        }
-      }
-    } catch (error) {
-      console.error("Could not fetch trip details:", error);
-      console.warn("Using simulation mode");
-      setIsSimulation(true);
-    }
-  };
 
   // 2. Socket Logic (Real-time)
   useEffect(() => {
@@ -182,7 +172,7 @@ export default function Tracking() {
     };
   }, [socket, activeTrip]);
 
-  // 3. Simulation Logic (Auto Loop)
+  // 3. Simulation Logic (Auto Loop) - Chạy chậm, mượt
   useEffect(() => {
     if (!isSimulation) return;
 
@@ -201,7 +191,7 @@ export default function Tracking() {
         
         return nextIndex;
       });
-    }, 100);
+    }, 500); // 500ms = chạy chậm, mượt mà (originally 100ms)
 
     return () => clearInterval(interval);
   }, [isSimulation, currentRouteIndex]);
@@ -209,6 +199,7 @@ export default function Tracking() {
   // Update bus location when path index or route changes
   useEffect(() => {
       if (isSimulation) {
+          // Use simulation path when not using real API data
           const simulationPath = MOCK_ROUTES[currentRouteIndex].path;
           if (routePathIndex < simulationPath.length) {
             const point = simulationPath[routePathIndex];
@@ -260,7 +251,7 @@ export default function Tracking() {
 
             {/* Route Line */}
             <Polyline 
-              positions={currentRoute.map((p: [number, number]) => [p[0], p[1]])} 
+              positions={currentRoute.map((p) => [p[0], p[1]] as [number, number])} 
               color="#f97316" 
               weight={6} 
               opacity={0.8} 
