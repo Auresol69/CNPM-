@@ -10,8 +10,46 @@ require('dotenv').config();
 const ORS_API_KEY = process.env.ORS_API_KEY;
 
 exports.getAllStations = factory.selectAll(Station);
-exports.createStation = factory.createOne(Station);
 exports.deleteStation = factory.deleteOne(Station);
+
+// Để check xem có chọn trùng trạm hoặc gần với trạm đã tồn tại trước đó không
+exports.createStation = catchAsync(async (req, res, next) => {
+    const { name, street, city, district, fullAddress, lat, lng } = req.body;
+
+    const newLocation = {
+        type: 'Point',
+        coordinates: [parseFloat(lng), parseFloat(lat)]
+    };
+
+    // Chỉ cần 1 trạm ở gần thì cảnh báo
+    const existingStation = await Station.findOne({
+        'address.location': {
+            $near: {
+                $geometry: newLocation,
+                $maxDistance: 150 // m
+            }
+        }
+    });
+
+    if (existingStation)
+        return next(new AppError(`Không thể tạo. Đã có trạm "${existingStation.name}" nằm quá gần vị trí này (trong vòng 150m).`, 400));
+
+    const newStation = await Station.create({
+        name,
+        address: {
+            street,
+            city,
+            district,
+            fullAddress,
+            location: newLocation
+        }
+    });
+
+    res.status(202).json({
+        'status': 'success',
+        'data': newStation
+    });
+});
 
 // API: GET /api/v1/stations/:id/walking-directions?lat=...&lng=...
 exports.getWalkingDirectionsToStation = catchAsync(async (req, res, next) => {
@@ -28,7 +66,7 @@ exports.getWalkingDirectionsToStation = catchAsync(async (req, res, next) => {
         return next(new AppError('Trạm không tồn tại.', 404));
 
     const start = `${lng},${lat}`;
-    const end = `${station.address.longitude},${station.address.latitude}`;
+    const end = `${station.address.location.coordinates[0]},${station.address.location.coordinates[1]}`;
 
     try {
         const url = `https://api.openrouteservice.org/v2/directions/foot-walking?start=${start}&end=${end}`;
@@ -71,7 +109,7 @@ exports.getStation = catchAsync(async (req, res, next) => {
                     $near: {
                         $geometry: {
                             type: 'Point',
-                            coordinates: [station.address.longitude, station.address.latitude]
+                            coordinates: [station.address.location.coordinates[0], station.address.location.coordinates[1]]
                         },
                         $maxDistance: 500
                     }

@@ -38,8 +38,8 @@ exports.createRoute = catchAsync(async (req, res, next) => {
     // ORS yêu cầu array in array: [[Lng, Lat], [Lng, Lat], ...]
     // LƯU Ý: OpenRouteService dùng [Kinh độ, Vĩ độ] (Ngược với Google)
     const coordinates = orderedStations.map(station => [
-        station.address.longitude,
-        station.address.latitude
+        station.address.location.coordinates[0],
+        station.address.location.coordinates[1]
     ]);
 
     try {

@@ -8,13 +8,17 @@ const addressSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    latitude: {
-        type: Number,
-        required: true
-    },
-    longitude: {
-        type: Number,
-        required: true
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point',
+            required: true
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            required: true
+        }
     }
 }, { _id: false });
 
@@ -33,5 +37,7 @@ const stationSchema = new mongoose.Schema({
         select: false
     },
 });
+
+stationSchema.index({ 'address.location': '2dsphere' });
 
 module.exports = mongoose.model("Station", stationSchema);
