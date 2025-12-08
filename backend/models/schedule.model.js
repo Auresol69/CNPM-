@@ -94,8 +94,7 @@ scheduleSchema.pre('save', async function (next) {
         // 2. Có ngày trong tuần trùng lặp
         daysOfWeek: { $in: this.daysOfWeek },
         // 3. Cùng chiều đi (PICK_UP hoặc DROP_OFF)
-        // direction: this.direction, --> sai logic vi : 
-        // xe hoặc tài xế nếu đã được gán lịch vào một khung giờ, thì bận, bất kể là đang "Đón" hay "Trả".
+        direction: this.direction,
 
         // 4. Cùng tài xế HOẶC cùng xe buýt
         $or: [
