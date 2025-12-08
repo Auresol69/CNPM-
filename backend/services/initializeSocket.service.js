@@ -375,7 +375,7 @@ module.exports = (io) => {
                 }
             });
 
-            const MIN_DISTANCE_THRESHOLD = 0.005; // km
+            const MIN_DISTANCE_THRESHOLD = 0.001; // km
             const DB_SAVE_INTERVAL_MS = 10000; // ms
             const DISTANCE_APPROACHING = 0.3; // 300m: sắp tới
             const DISTANCE_ARRIVED = 0.2;      // 200m: đã tới
@@ -473,6 +473,8 @@ module.exports = (io) => {
                 // 🔥 LOGIC TÍNH TOÁN SẮP TỚI, TỚI, RỜI TRẠM
                 const state = socket.trackingState;
                 const stops = socket.routeStops;
+
+                console.log(state.nextStationIndex);
 
                 // đi hết trạm skippp
                 if (state.nextStationIndex >= stops.length) return;
