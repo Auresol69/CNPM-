@@ -3,6 +3,30 @@ const Schedule = require("../models/schedule.model");
 const AppError = require("../utils/appError");
 const Student = require("../models/student.model");
 
+// GET /api/v1/schedules - Lấy tất cả schedules
+exports.getAllSchedules = catchAsync(async (req, res, next) => {
+    let filter = {};
+
+    // Nếu là Parent, chỉ xem schedules có con mình
+    if (req.user.role === 'Parent') {
+        const childrenIds = (await Student.find({ parentId: req.user.id }).select('_id')).map(s => s._id);
+        filter['stopTimes.studentIds'] = { $in: childrenIds };
+    }
+    // Admin/Manager/Driver thấy tất cả
+
+    const schedules = await Schedule.find(filter)
+        .populate('routeId', 'name')
+        .populate('driverId', 'name')
+        .populate('busId', 'licensePlate')
+        .sort('-startDate');
+
+    res.status(200).json({
+        status: 'success',
+        results: schedules.length,
+        data: schedules
+    });
+});
+
 // PATCH /api/v1/schedules/:scheduleId/stopTimes/:stationId/students
 
 // Headerd: App/JSON

@@ -6,6 +6,8 @@ const route = express.Router();
 
 route.use(authenticateToken);
 
+route.get('/', scheduleController.getAllSchedules);
+
 route.patch('/:scheduleId/stopTimes/:stationId/students', scheduleController.AddStudents);
 
 route.get('/:id/route', scheduleController.getScheduleRoute);
