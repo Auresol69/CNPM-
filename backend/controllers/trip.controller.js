@@ -10,8 +10,30 @@ const FormData = require('form-data');
 const FaceData = require('../models/faceData.model');
 const { uploadToCloudinary } = require('../utils/cloudinary');
 
-// Sử dụng lại factory cho các hành động đơn giản
-exports.getAllTrips = factory.selectAll(Trip);
+// Lấy tất cả trips với filter theo role
+exports.getAllTrips = catchAsync(async (req, res, next) => {
+    let filter = {};
+
+    // Nếu là Parent, chỉ xem trips có con mình
+    if (req.user.role === 'Parent') {
+        const childrenIds = (await studentModel.find({ parentId: req.user.id }).select('_id')).map(s => s._id);
+        filter['studentStops.studentId'] = { $in: childrenIds };
+    }
+    // Admin/Manager/Driver thấy tất cả
+
+    const trips = await Trip.find(filter)
+        .populate('busId', 'licensePlate')
+        .populate('driverId', 'name')
+        .populate('routeId', 'name')
+        .sort('-tripDate');
+
+    res.status(200).json({
+        status: 'success',
+        results: trips.length,
+        data: trips
+    });
+});
+
 exports.deleteTrip = factory.deleteOne(Trip);
 exports.createTrip = factory.createOne(Trip);
 
