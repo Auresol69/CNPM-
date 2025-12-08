@@ -353,8 +353,8 @@ module.exports = (io) => {
                     socket.routeStops = trip.routeId.orderedStops.map(stop => ({
                         id: stop._id.toString(),
                         name: stop.name,
-                        lat: stop.address.latitude,
-                        lng: stop.address.longitude
+                        lat: stop.address.location.coordinates[1],
+                        lng: stop.address.location.coordinates[0]
                     }));
 
                     // Sync trạng thái hiện tại từ DB vào Socket
@@ -473,8 +473,6 @@ module.exports = (io) => {
                 // 🔥 LOGIC TÍNH TOÁN SẮP TỚI, TỚI, RỜI TRẠM
                 const state = socket.trackingState;
                 const stops = socket.routeStops;
-
-                console.log(state.nextStationIndex);
 
                 // đi hết trạm skippp
                 if (state.nextStationIndex >= stops.length) return;
