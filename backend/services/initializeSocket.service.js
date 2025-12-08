@@ -367,6 +367,7 @@ module.exports = (io) => {
                     console.log(`Xe buýt ${busId} đã BẮT ĐẦU chuyến ${socket.tripId}`);
                     socket.emit('trip:started_successfully');
 
+                    io.to(`trip_${tripId}`).emit('trip:started');
                 } catch (error) {
                     // Nếu .save() hoặc .findById() bị lỗi, nó sẽ nhảy vào đây
                     console.error(`Lỗi khi xe ${socket.bus.id} bắt đầu chuyến ${data.tripId}:`, error.message);
