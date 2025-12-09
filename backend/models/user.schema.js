@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema({
         default: true,
         select: false
     },
-});
+}, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
     // Chỉ chạy hàm này nếu mật khẩu đã được thay đổi (hoặc là mới)

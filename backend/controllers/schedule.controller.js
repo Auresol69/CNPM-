@@ -2,6 +2,38 @@ const catchAsync = require("../utils/catchAsync");
 const Schedule = require("../models/schedule.model");
 const AppError = require("../utils/appError");
 const Student = require("../models/student.model");
+const Route = require("../models/route.model");
+
+exports.createSchedule = catchAsync(async (req, res, next) => {
+    const { routeId, driverId, busId, direction, daysOfWeek, startDate, endDate, startTime } = req.body;
+
+    const route = await Route.findById(routeId).select('orderedStops');
+    if (!route) {
+        return next(new AppError('Tuyến đường không tồn tại.', 404));
+    }
+
+    const generatedStopTimes = route.orderedStops.map(stationId => ({
+        stationId: stationId,
+        arrivalTime: startTime || "00:00", // Mặc định hoặc lấy giờ frontend gửi
+        studentIds: []
+    }));
+
+    const newSchedule = await Schedule.create({
+        routeId,
+        driverId,
+        busId,
+        direction,
+        daysOfWeek,
+        startDate,
+        endDate,
+        stopTimes: generatedStopTimes
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: newSchedule
+    });
+});
 
 // GET /api/v1/schedules - Lấy tất cả schedules
 exports.getAllSchedules = catchAsync(async (req, res, next) => {

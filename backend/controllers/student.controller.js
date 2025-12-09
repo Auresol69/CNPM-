@@ -7,6 +7,26 @@ const FormData = require('form-data');
 const FaceData = require('../models/faceData.model');
 const { uploadToCloudinary } = require('../utils/cloudinary');
 
+exports.getAllStudent = catchAsync(async (req, res, next) => {
+    const MAX_LIMIT = 100;
+    if (req.query.limit && parseInt(req.query.limit, 10) > MAX_LIMIT)
+        req.query.limit = String(MAX_LIMIT);
+
+    const features = new APIFeatures(Student.find(), req.query)
+        .filter()
+        .sort()
+        .limitField()
+        .pagination();
+
+    const students = await features.query.populate('parentId', 'name');
+
+    res.status(200).json({
+        status: 'success',
+        amount: students.length,
+        data: students
+    });
+});
+
 exports.getMyStudents = catchAsync(async (req, res, next) => {
     const baseFilter = {
         parentId: req.user.id
@@ -22,7 +42,7 @@ exports.getMyStudents = catchAsync(async (req, res, next) => {
         .limitField()
         .pagination();
 
-    const myStudents = await features.query;
+    const myStudents = await features.query.populate('parentId', 'name');
 
     if (!myStudents || myStudents.length === 0)
         return next(new AppError('Không tìm thấy học sinh nào của qúi phụ huynh', 404));
@@ -68,16 +88,15 @@ exports.registerStudentFace = catchAsync(async (req, res, next) => {
         encoding = aiResponse.data.encoding;
         imageUrl = cloudUrl;
     } catch (error) {
-        // Nếu lỗi đến từ service Python (có response trả về)
-        // if (error.response && error.response.data && error.response.data) {
-        //     // Trả về lỗi cụ thể từ service Python
-        //     return next(new AppError(error.response.data.error, error.response.status));
-        // }
+        console.error('Face registration error:', error.message);
 
+        // Nếu lỗi từ service Python
+        if (error.response?.data?.error) {
+            return next(new AppError(error.response.data.error, error.response.status || 500));
+        }
 
-        return next(new AppError(error, 500));
-        // Nếu là lỗi khác (VD: không kết nối được service, timeout,...)
-        return next(new AppError('Không thể kết nối hoặc dịch vụ AI gặp lỗi.', 500));
+        // Lỗi khác (network, timeout, cloudinary...)
+        return next(new AppError('Không thể đăng ký khuôn mặt: ' + error.message, 500));
     }
 
     const faceData = await FaceData.findOneAndUpdate({

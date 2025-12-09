@@ -17,6 +17,7 @@ const studentRoute = require("./routes/student.route");
 const notificationRoute = require("./routes/notification.route");
 const messageRoute = require("./routes/message.route");
 const scheduleRoute = require("./routes/schedule.route");
+const alertRoute = require("./routes/alert.route");
 require("dotenv").config();
 
 const User = require("./models/user.model");
@@ -36,7 +37,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const { DB_URL, PORT } = process.env;
 const port = PORT || 3000;
 
-const allowed = [CLIENT_URL, 'http:localhost:5500', 'http://127.0.0.1:5500'];
+const allowed = [CLIENT_URL, 'http://localhost:5174', 'http://localhost:5175','http:localhost:5500', 'http://127.0.0.1:5500'];
 
 // CORS cho HTTP API
 app.use(cors({
@@ -109,7 +110,7 @@ const models = {
     stations: Station,
     students: Student,
     trips: Trip,
-    messages: Message
+    messages: Message,
 }
 
 // Middleware to get the correct model based on the URL parameter
@@ -134,6 +135,7 @@ app.use("/api/v1/students", studentRoute);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/v1/messages", messageRoute);
 app.use("/api/v1/schedules", scheduleRoute);
+app.use("/api/v1/alerts", alertRoute);
 
 // Route động (generic) phải được đăng ký SAU CÙNG
 app.use("/api/v1/:models", getModel, modelRoute);

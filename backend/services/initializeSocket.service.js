@@ -180,6 +180,19 @@ module.exports = (io) => {
                         }
                     }
 
+                    if (user.role === 'Driver'){
+
+                        const trip = await Trip.findOne({
+                            _id: tripId,
+                            driverId: user.id
+                        }).select('_id');
+
+                        if (trip){
+                            isAllowed = true;
+                            tripExists = true;
+                        }
+                    }
+
                     else if (user.role === 'Parent') {
                         // Xu ly tac vu check xem co con minh trong chuyen do khong
 
@@ -217,12 +230,40 @@ module.exports = (io) => {
                         } else {
                             console.log(`User ${user.id} BỊ TỪ CHỐI (Không có quyền): ${tripId}`);
                         }
+                        return;
                     }
 
                 } catch (error) {
                     console.error(`Lỗi khi ${socket.user.id} join phòng trip_${tripId}:`, error);
                 }
 
+            });
+
+            // Multi-tracking
+            // socket.on('join_all_active_trips', async () => {
+            //     const user = socket.user;
+
+            //     if (user.role !== 'Parent') return;
+
+            //     const userStudents = await Student.find({ parentId: user._id }).select('_id');
+
+            //     if (userStudents.length === 0)
+            //         return socket.emit('error', 'Bạn chưa liên kết với học sinh nào.');
+
+            //     const activeTrips = await Trip.find({
+            //         status: 'IN_PROGRESS',
+                    
+            //     });
+            // });
+
+            // leave room
+            socket.on('leave_trip_room', (tripId) => {
+                const roomName = `trip_${tripId}`;
+
+                if (socket.rooms.has(roomName)) {
+                    socket.leave(roomName);
+                    console.log(`User ${socket.user.id} đã rời khỏi phòng ${roomName}`);
+                }
             });
 
             // Gửi tin nhắn cho tài xế hoặc phụ huynh
