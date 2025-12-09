@@ -111,7 +111,7 @@ exports.getStation = catchAsync(async (req, res, next) => {
         0, 0, 0, 0
     ));
 
-    const [studentsNearBy, activeSchedules] = await Promise.all(
+    const [studentsNearBy, allSchedules] = await Promise.all(
         [
             Student.find({
                 location: {
@@ -124,17 +124,15 @@ exports.getStation = catchAsync(async (req, res, next) => {
                     }
                 }
             }).select('name grade location'),
+            // Tìm TẤT CẢ schedules có chứa trạm này (không check ngày tháng, isActive)
             Schedule.find({
-                isActive: true,
-                'stopTimes.stationId': req.params.id,
-                startDate: { $lte: today },
-                endDate: { $gte: today }
+                'stopTimes.stationId': req.params.id
             }).select('stopTimes')
         ]);
 
     const assignedStudentIds = new Set();
 
-    activeSchedules.forEach(schedule => {
+    allSchedules.forEach(schedule => {
         const stop = schedule.stopTimes.find(s => s.stationId.toString() === req.params.id);
         if (stop && stop.studentIds)
             stop.studentIds.forEach(id => assignedStudentIds.add(id.toString()));
