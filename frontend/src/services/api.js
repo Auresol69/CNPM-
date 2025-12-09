@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Base URL from BackendSpecs.md
+// Base URL - supports both VITE_API_BASE_URL (Parent) and VITE_API_URL (Driver)
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://smart-school-bus-api.onrender.com/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://smart-school-bus-api.onrender.com/api/v1',
   withCredentials: false,
 });
 
@@ -10,7 +10,6 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    console.log(token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

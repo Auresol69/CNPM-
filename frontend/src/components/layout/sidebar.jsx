@@ -1,34 +1,71 @@
+// // src/components/layout/Sidebar.jsx
 // import React from 'react';
+// import { useNavigate, useLocation } from 'react-router-dom';
 
-// export function Sidebar({ className = '' }) {
-//   const items = [
-//     { label: 'Tổng quan', icon: 'M3 12h18' },
-//     { label: 'Tuyến xe', icon: 'M4 6h16' },
-//     { label: 'Lịch trình', icon: 'M3 7h18' },
-//     { label: 'Học sinh', icon: 'M3 12h18' },
-//     { label: 'Báo cáo', icon: 'M3 17h18' },
-//     { label: 'Cài đặt', icon: 'M3 22h18' },
-//   ];
+// export default function Sidebar({ className = '', open = true, role = 'driver' }) {
+//   const navigate = useNavigate();
+//   const location = useLocation();
 
+//   const menus = {
+//     driver: [
+//       { label: 'Tổng quan', path: '/driver/dashboard' },
+//       { label: 'Tuyến xe', path: '/driver/features' },
+//       { label: 'Lịch trình', path: '/driver/daily-schedule' },
+//       { label: 'Học sinh', path: '/driver/contacts' },
+//       { label: 'Vận hành', path: '/driver/operations' },
+//     ],
+//     parent: [
+//       { label: 'Tổng quan', path: '/parent/dashboard' },
+//       { label: 'Tính năng', path: '/parent/features' },
+//       { label: 'Theo dõi', path: '/parent/tracking' },
+//       { label: 'Thông báo', path: '/parent/notifications' },
+//     ],
+//     manager: [
+//       { label: 'Dashboard', path: '/manager/dashboard' },
+//       { label: 'Báo cáo', path: '/manager/reports' },
+//       { label: 'Danh mục', path: '/manager/catalog' },
+//       { label: 'Lịch trình', path: '/manager/schedules' },
+//       { label: 'Theo dõi xe', path: '/manager/bus-tracking' },
+//     ],
+//   };
+
+//   const items = menus[role] || [];
+
+//   const isActivePath = (path) => {
+//     return location.pathname === path || location.pathname.startsWith(path + '/');
+//   };
+
+//   // When closed, hide visually (but still accessible if needed)
 //   return (
-//     <aside className={`fixed top-16 left-0 w-64 bg-white border-r h-[calc(100vh-4rem)] ${className}`}>
-//       <div className="p-4">
+//     <aside
+//       className={`fixed top-16 left-0 bottom-0 bg-white border-r overflow-auto transition-all duration-200
+//         ${open ? 'w-64 block' : 'w-0 hidden'} ${className}`}
+//       aria-hidden={!open}
+//     >
+//       <div className="h-full p-4">
 //         <div className="text-sm text-gray-500 mb-4">Sản phẩm</div>
+
 //         <ul className="space-y-1">
-//           {items.map((it, idx) => (
-//             <li key={it.label}>
-//               <a
-//                 href="#"
-//                 className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${idx === 1 ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'}`}>
-//                 <div className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100">
-//                   <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-//                   </svg>
-//                 </div>
-//                 <span className="text-sm">{it.label}</span>
-//               </a>
-//             </li>
-//           ))}
+//           {items.map((it) => {
+//             const active = isActivePath(it.path);
+//             return (
+//               <li key={it.path}>
+//                 <button
+//                   onClick={() => navigate(it.path)}
+//                   className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md transition-colors
+//                     ${active ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}
+//                   `}
+//                 >
+//                   <div className={`w-8 h-8 flex items-center justify-center rounded-md ${active ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+//                     <svg className={`w-4 h-4 ${active ? 'text-indigo-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+//                     </svg>
+//                   </div>
+//                   <span className="text-sm">{it.label}</span>
+//                 </button>
+//               </li>
+//             );
+//           })}
 //         </ul>
 
 //         <div className="mt-6 p-3 bg-indigo-50 rounded-md">
@@ -40,39 +77,65 @@
 //     </aside>
 //   );
 // }
-
-// export default Sidebar;
+// src/components/layout/Sidebar.jsx
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export function Sidebar({ className = '' , open}) {
-  const items = [
-    { label: 'Tổng quan', icon: 'M3 12h18' },
-    { label: 'Tuyến xe', icon: 'M4 6h16' },
-    { label: 'Lịch trình', icon: 'M3 7h18' },
-    { label: 'Học sinh', icon: 'M3 12h18' },
-    { label: 'Báo cáo', icon: 'M3 17h18' },
-    { label: 'Cài đặt', icon: 'M3 22h18' },
-  ];
+export default function Sidebar({ className = '', open = true, role = 'driver' }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const menus = {
+    driver: [
+      { label: 'Tổng quan', path: '/driver' }, // use '/driver' index
+      { label: 'Tuyến xe', path: '/driver/features' },
+      { label: 'Lịch trình', path: '/driver/daily-schedule' },
+      { label: 'Học sinh', path: '/driver/contacts' },
+      { label: 'Vận hành', path: '/driver/operations' },
+    ],
+    // parent/manager omitted for brevity
+  };
+
+  const items = menus[role] || [];
+
+  const isActivePath = (path) => {
+    // treat '/driver' and '/driver/dashboard' as same base
+    if (path === '/driver') {
+      return location.pathname === '/driver' || location.pathname === '/driver/' || location.pathname === '/driver/dashboard';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   return (
-    <aside className={`fixed top-16 left-0 w-64 bg-white border-r bottom-0 ${className} ${open ? 'block' : 'hidden '} `}>
-      <div className="h-full p-4 overflow-auto">
+    <aside
+      className={`fixed top-16 left-0 bottom-0 bg-white border-r overflow-auto transition-all duration-200
+        ${open ? 'w-64 block' : 'w-0 hidden'} ${className}`}
+      aria-hidden={!open}
+    >
+      <div className="h-full p-4">
         <div className="text-sm text-gray-500 mb-4">Sản phẩm</div>
+
         <ul className="space-y-1">
-          {items.map((it, idx) => (
-            <li key={it.label}>
-              <a
-                href="#"
-                className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${idx === 1 ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'}`}>
-                <div className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100">
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </div>
-                <span className="text-sm">{it.label}</span>
-              </a>
-            </li>
-          ))}
+          {items.map((it) => {
+            const active = isActivePath(it.path);
+            return (
+              <li key={it.path}>
+                <button
+                  onClick={() => navigate(it.path)}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md transition-colors
+                    ${active ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}
+                  `}
+                >
+                  <div className={`w-8 h-8 flex items-center justify-center rounded-md ${active ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+                    <svg className={`w-4 h-4 ${active ? 'text-indigo-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </div>
+                  <span className="text-sm">{it.label}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-6 p-3 bg-indigo-50 rounded-md">
@@ -84,5 +147,3 @@ export function Sidebar({ className = '' , open}) {
     </aside>
   );
 }
-
-export default Sidebar;

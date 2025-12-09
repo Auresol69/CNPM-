@@ -1,0 +1,13 @@
+/* FIX Leaflet map đè lên header khi scroll */
+.leaflet-container-fix {
+  z-index: 0 !important;
+}
+
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+/* Đảm bảo popup của Leaflet không bị cắt */
+.leaflet-popup {
+  z-index: 1000 !important;
+}

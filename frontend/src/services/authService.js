@@ -3,7 +3,7 @@ import api from './api';
 /**
  * Logs in the user by sending credentials to the backend.
  * Upon successful login, it stores the JWT token in localStorage.
- * @param {object} credentials - The user's credentials (e.g., { username, password }).
+ * @param {object} credentials - The user's credentials (e.g., { username, password } or { email, password }).
  * @returns {Promise<object>} The data from the API response.
  */
 const login = async (credentials) => {
@@ -15,9 +15,9 @@ const login = async (credentials) => {
     if (response.data && response.data.accessToken) {
       const { accessToken, data } = response.data;
       
-      console.log("siuu ",response.data);
+      console.log("Login success:", response.data);
 
-      // Store the token and user info in localStorage. We'll use the key 'token' internally for consistency.
+      // Store the token and user info in localStorage
       localStorage.setItem('token', accessToken);
       if (data && data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -25,12 +25,10 @@ const login = async (credentials) => {
       
       return response.data;
     } else {
-      // Handle cases where login is successful by status code but no token is in the body
       throw new Error('Login did not return an access token.');
     }
   } catch (error) {
     console.error('Login failed in authService:', error);
-    // Re-throw the error so the UI component can handle it
     throw error;
   }
 };
@@ -57,8 +55,6 @@ const logout = async () => {
   } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Optional: Redirect to login page
-    // window.location.href = '/parent/login';
   }
 };
 

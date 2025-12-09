@@ -1,61 +1,416 @@
-import React from 'react';
+// src/pages/driver/DriverContacts.jsx
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import {
+  Phone,
+  Search,
+  MessageCircle,
+  X,
+  Send,
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import { useRouteTracking } from '../../context/RouteTrackingContext';
+import { getMySchedule } from '../../services/tripService';
 
-const features = [
-  {
-    title: 'GPS Tracking',
-    desc: 'Precise real-time location tracking with GPS technology and geofencing capabilities for enhanced safety.',
-    icon: '📍'
-  },
-  {
-    title: 'HD Camera System',
-    desc: 'High-definition cameras with night vision, recording capabilities, and live streaming for complete visibility.',
-    icon: '📷'
-  },
-  {
-    title: 'Emergency Response',
-    desc: 'Instant emergency alerts, panic buttons, and direct communication with emergency services.',
-    icon: '🛡️'
-  },
-  {
-    title: 'Smart Scheduling',
-    desc: 'AI-powered route optimization, automatic schedule updates, and traffic-aware arrival predictions.',
-    icon: '⏰'
-  },
-  {
-    title: 'Student Check-in',
-    desc: 'RFID-based student check-in system with automatic parent notifications and attendance tracking.',
-    icon: '🧑‍🎓'
-  },
-  {
-    title: 'Driver Monitoring',
-    desc: 'Driver behavior monitoring, fatigue detection, and compliance tracking for maximum safety standards.',
-    icon: '🚍'
-  }
-];
+// Biến toàn cục để tạo ID tin nhắn duy nhất
+let messageIdCounter = Date.now();
+const generateUniqueId = () => {
+  return ++messageIdCounter;
+};
 
 export default function DriverContacts() {
-  return (
-    <section className="bg-white rounded-lg shadow-sm p-6 border">
-      <div className="text-center mb-8">
-        <h2 className="text-xl md:text-2xl font-semibold">Advanced Safety Features</h2>
-        <p className="text-sm text-gray-500 mt-2">State-of-the-art technology to ensure maximum safety and peace of mind</p>
-      </div>
+  const {
+    isTracking,
+    currentStation,
+    studentCheckIns,
+    allStudentsForContact = [],
+  } = useRouteTracking();
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((f) => (
-          <div key={f.title} className="bg-white rounded-xl p-6 shadow-lg border">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-md bg-gray-50 flex items-center justify-center text-2xl">
-                {f.icon}
-              </div>
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChat, setActiveChat] = useState(null);
+  const [messageSearch, setMessageSearch] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  
+  const [messages, setMessages] = useState({
+    admin: [
+      { id: 1, sender: 'admin', text: 'Chuyến đi hôm nay thế nào anh?', time: '07:20' },
+      { id: 2, sender: 'driver', text: 'Dạ đang chạy tốt ạ!', time: '07:22' },
+    ],
+  });
+
+  const messagesEndRef = useRef(null);
+
+  // Tải dữ liệu nếu chưa có
+  useEffect(() => {
+    const initData = async () => {
+      if (allStudentsForContact.length > 0) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        await getMySchedule();
+      } catch (err) {
+        console.warn('Không thể tải danh bạ → dùng dữ liệu mẫu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    initData();
+  }, [allStudentsForContact.length]);
+
+  // Load tin nhắn từ localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('chat_messages');
+      if (raw) {
+        const store = JSON.parse(raw);
+        setMessages(prev => {
+          const merged = { ...prev };
+          Object.keys(store).forEach(thread => {
+            if (!merged[thread]) merged[thread] = [];
+            const existingIds = new Set(merged[thread].map(m => m.id));
+            store[thread].forEach(m => {
+              if (!existingIds.has(m.id)) {
+                merged[thread].push(m);
+                // Cập nhật counter để tránh trùng
+                if (m.id > messageIdCounter) messageIdCounter = m.id;
+              }
+            });
+          });
+          return merged;
+        });
+      }
+    } catch (e) {
+      console.error('Lỗi đọc tin nhắn từ localStorage', e);
+    }
+  }, []);
+
+  // Lắng nghe tin nhắn từ các component khác
+  useEffect(() => {
+    const handler = (e) => {
+      try {
+        const { threadId, message } = e.detail || {};
+        if (!threadId || !message) return;
+        setMessages(prev => {
+          const copy = { ...prev };
+          const existingIds = new Set((copy[threadId] || []).map(m => m.id));
+          if (!existingIds.has(message.id)) {
+            copy[threadId] = [...(copy[threadId] || []), message];
+          }
+          return copy;
+        });
+      } catch (err) {
+        console.error('Lỗi nhận tin nhắn broadcast', err);
+      }
+    };
+    window.addEventListener('chat_message', handler);
+    return () => window.removeEventListener('chat_message', handler);
+  }, []);
+
+  // Cuộn xuống cuối khi có tin mới
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, activeChat]);
+
+  // Tìm kiếm học sinh
+  const filteredStudents = useMemo(() => {
+    if (!searchTerm) return allStudentsForContact;
+    const lower = searchTerm.toLowerCase();
+    return allStudentsForContact.filter(s =>
+      s.name.toLowerCase().includes(lower) ||
+      s.class?.toLowerCase().includes(lower) ||
+      s.parentName?.toLowerCase().includes(lower) ||
+      s.parentPhone?.includes(searchTerm)
+    );
+  }, [searchTerm, allStudentsForContact]);
+
+  // Trạng thái học sinh
+  const getStudentStatus = (studentId) => {
+    if (!isTracking) return 'waiting';
+    const status = studentCheckIns[studentId];
+    if (status === 'present') return 'onboard';
+    if (status === 'absent') return 'absent';
+    return 'late';
+  };
+
+  const getStatusBadge = (status) => {
+    const base = 'px-3 py-1 rounded-full text-xs font-bold';
+    switch (status) {
+      case 'onboard': return <span className={`${base} bg-green-100 text-green-800`}>Đã lên</span>;
+      case 'absent':  return <span className={`${base} bg-red-100 text-red-800`}>Vắng</span>;
+      case 'late':    return <span className={`${base} bg-yellow-100 text-yellow-800`}>Trễ</span>;
+      default:        return <span className={`${base} bg-gray-100 text-gray-700`}>Chưa</span>;
+    }
+  };
+
+  // Mở chat
+  const openChat = (chatId) => {
+    setActiveChat(chatId);
+    setIsChatOpen(true);
+    setMessageSearch('');
+    setNewMessage('');
+  };
+
+  // Gửi tin nhắn – ĐÃ SỬA LỖI TRÙNG ID + GỬI 2 LẦN
+  const sendMessage = () => {
+    if (!newMessage.trim() || !activeChat) return;
+
+    const now = new Date().toTimeString().slice(0, 5);
+    const msg = {
+      id: generateUniqueId(), // ← Đảm bảo ID luôn duy nhất
+      sender: 'driver',
+      text: newMessage.trim(),
+      time: now,
+    };
+
+    // Cập nhật state ngay lập tức
+    setMessages(prev => ({
+      ...prev,
+      [activeChat]: [...(prev[activeChat] || []), msg]
+    }));
+
+    // Lưu vào localStorage + broadcast
+    try {
+      const KEY = 'chat_messages';
+      const raw = localStorage.getItem(KEY);
+      const store = raw ? JSON.parse(raw) : {};
+      if (!store[activeChat]) store[activeChat] = [];
+      
+      // Kiểm tra trùng ID (dù đã dùng counter thì vẫn an toàn)
+      if (!store[activeChat].some(m => m.id === msg.id)) {
+        store[activeChat].push(msg);
+        localStorage.setItem(KEY, JSON.stringify(store));
+      }
+
+      window.dispatchEvent(new CustomEvent('chat_message', {
+        detail: { threadId: activeChat, message: msg }
+      }));
+    } catch (e) {
+      console.error('Lỗi lưu tin nhắn', e);
+    }
+
+    setNewMessage('');
+  };
+
+  const currentMessages = activeChat ? messages[activeChat] || [] : [];
+  const filteredMessages = useMemo(() => {
+    if (!messageSearch) return currentMessages;
+    const lower = messageSearch.toLowerCase();
+    return currentMessages.filter(m => m.text.toLowerCase().includes(lower));
+  }, [currentMessages, messageSearch]);
+
+  const getChatTitle = () => {
+    if (activeChat === 'admin') return 'Chat với Quản Lý (Admin)';
+    const student = allStudentsForContact.find(s => `parent-${s.id}` === activeChat);
+    return student ? `Chat với ${student.parentName} (PH ${student.name})` : 'Chat';
+  };
+
+  // Loading & Empty state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-xl font-medium text-indigo-700">Đang tải danh bạ...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && allStudentsForContact.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-10 max-w-md text-center">
+          <AlertCircle className="w-20 h-20 text-orange-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">Chưa có dữ liệu học sinh</h2>
+          <p className="text-gray-600 mb-6">Vui lòng bắt đầu chuyến đi để tải danh bạ phụ huynh</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition"
+          >
+            Tải lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4 md:p-6 pb-20">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-2xl mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <Phone className="w-12 h-12" />
               <div>
-                <div className="text-sm font-medium">{f.title}</div>
-                <div className="text-xs text-gray-500 mt-2">{f.desc}</div>
+                <h1 className="text-2xl md:text-3xl font-bold">Danh Bạ & Tin Nhắn</h1>
+                <p className="text-base opacity-90">Gọi điện • Chat nhanh với phụ huynh & quản lý</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm opacity-90">Trạng thái chuyến</div>
+              <div className="text-xl font-bold mt-1">
+                {isTracking ? 'ĐANG CHẠY' : 'CHƯA BẮT ĐẦU'}
+              </div>
+              <div className="text-sm opacity-90 mt-1">
+                Trạm hiện tại: <strong>{currentStation?.name || '—'}</strong>
               </div>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="grid lg:grid-cols-1 gap-6">
+          {/* Chat với Admin */}
+          <button
+            onClick={() => openChat('admin')}
+            className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-2xl py-5 shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-4 text-xl font-bold"
+          >
+            <MessageCircle className="w-10 h-10" />
+            Chat với Quản Lý (Admin)
+          </button>
+
+          {/* Danh sách phụ huynh */}
+          <div className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-indigo-100">
+            <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-6 h-6" />
+              <input
+                type="text"
+                placeholder="Tìm học sinh, phụ huynh, số điện thoại..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 text-lg rounded-xl border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none transition"
+              />
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {filteredStudents.length === 0 ? (
+                <p className="text-center py-12 text-gray-500 text-lg">Không tìm thấy học sinh nào</p>
+              ) : (
+                filteredStudents.map((student) => {
+                  const status = getStudentStatus(student.id);
+                  return (
+                    <div
+                      key={student.id} // ← Key luôn là student.id → duy nhất
+                      className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all flex items-center justify-between border-2 border-white/50"
+                    >
+                      <div className="flex items-center gap-5">
+                        <img
+                          src={student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`}
+                          alt={student.name}
+                          className="w-16 h-16 rounded-full ring-4 ring-white shadow-xl"
+                        />
+                        <div>
+                          <div className="font-bold text-lg">{student.name}</div>
+                          <div className="text-sm text-gray-600">
+                            {student.class} • PH: <strong>{student.parentName}</strong>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{student.parentPhone}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(status)}
+                        <a
+                          href={`tel:${student.parentPhone}`}
+                          className="p-4 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:scale-110 transition"
+                        >
+                          <Phone className="w-6 h-6" />
+                        </a>
+                        <button
+                          onClick={() => openChat(`parent-${student.id}`)}
+                          className="p-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:scale-110 transition"
+                        >
+                          <MessageCircle className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* MODAL CHAT */}
+        {isChatOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-3xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden border-8 border-indigo-100">
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setIsChatOpen(false)} className="p-2 rounded-full hover:bg-white/20 transition">
+                    <ArrowLeft className="w-7 h-7" />
+                  </button>
+                  <h2 className="text-2xl font-bold">{getChatTitle()}</h2>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="p-2 rounded-full hover:bg-white/20 transition">
+                  <X className="w-7 h-7" />
+                </button>
+              </div>
+
+              <div className="p-4 border-b bg-gray-50">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Tìm trong cuộc trò chuyện..."
+                    value={messageSearch}
+                    onChange={(e) => setMessageSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-300 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {filteredMessages.length === 0 ? (
+                  <p className="text-center text-gray-500 text-lg py-20">Chưa có tin nhắn</p>
+                ) : (
+                  filteredMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender === 'driver' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs md:max-w-md px-5 py-3 rounded-3xl shadow-lg ${
+                        msg.sender === 'driver'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                      }`}>
+                        <p className="text-base">{msg.text}</p>
+                        <p className={`text-xs mt-2 opacity-80 ${msg.sender === 'driver' ? 'text-indigo-200' : 'text-gray-500'}`}>
+                          {msg.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="p-5 border-t bg-gray-50">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Nhập tin nhắn..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                    className="flex-1 px-6 py-4 rounded-full border-2 border-gray-300 focus:border-indigo-500 focus:outline-none text-lg"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim()}
+                    className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:bg-gray-400 text-white rounded-full font-bold shadow-xl hover:scale-110 transition flex items-center gap-3"
+                  >
+                    <Send className="w-6 h-6" />
+                    Gửi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 }
