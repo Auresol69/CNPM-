@@ -20,10 +20,19 @@ exports.getAllStudent = catchAsync(async (req, res, next) => {
 
     const students = await features.query.populate('parentId', 'name');
 
+    const studentIds = students.map(s => s._id);
+    const faceDatas = await FaceData.find({ studentId: { $in: studentIds } }).select('studentId');
+    const faceDataSet = new Set(faceDatas.map(fd => fd.studentId.toString()));
+
+    const studentsWithFaceData = students.map(student => ({
+        ...student.toObject(),
+        hasFaceData: faceDataSet.has(student._id.toString())
+    }));
+
     res.status(200).json({
         status: 'success',
-        amount: students.length,
-        data: students
+        amount: studentsWithFaceData.length,
+        data: studentsWithFaceData
     });
 });
 
