@@ -22,7 +22,7 @@ exports.getMyStudents = catchAsync(async (req, res, next) => {
         .limitField()
         .pagination();
 
-    const myStudents = await features.query;
+    const myStudents = await features.query.populate('parentId', 'name');
 
     if (!myStudents || myStudents.length === 0)
         return next(new AppError('Không tìm thấy học sinh nào của qúi phụ huynh', 404));
