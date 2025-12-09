@@ -48,17 +48,18 @@ export default function TrangChu() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <Box 
                 sx={{ 
-                  height: 48, width: 48, 
-                  bgcolor: 'white', 
-                  borderRadius: 2,
+                  height: 60, width: 60,
+                  bgcolor: '#f1f5f9',
+                  borderRadius: 50,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  boxShadow: 4 
                 }}
               >
                 <img 
                   src={logoImg} 
                   alt="Logo" 
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  style={{ width: '130%', height: '150%', objectFit: 'contain' }} 
                 />
               </Box>
               <Typography variant="h6" fontWeight="bold" sx={{ color: 'white' }}>
@@ -110,7 +111,7 @@ export default function TrangChu() {
                 variant="h3" 
                 fontWeight="bold" 
                 sx={{ 
-                  mb: 3, 
+                  mb: 2,
                   lineHeight: 1.2, 
                   fontSize: { xs: '1.75rem', md: '2.25rem' },
                   color: '#6366f1'
@@ -120,26 +121,40 @@ export default function TrangChu() {
                 và luôn kết nối
               </Typography>
               
-              <Typography variant="body1" sx={{ mb: 4, color: '#475569', lineHeight: 1.6 }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                    mb: 0,
+                    color: '#475569', 
+                    lineHeight: 1.6 
+                }}
+              >
                 Theo dõi xe đưa đón học sinh theo thời gian thực, xem camera trực tiếp 
                 và nhận thông báo tức thì giúp phụ huynh yên tâm và đảm bảo an toàn 
                 cho con trên suốt hành trình đến trường.
               </Typography>
 
-              {/* Hình xe bus */}
+              {/* Hình xe bus*/}
               <Box 
                 sx={{ 
                   width: '100%', 
-                  maxWidth: 400,
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
+                  mt: -10,
                 }}
               >
                 <img 
                   src={busImg} 
                   alt="School Bus" 
-                  style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain' }} 
+                  style={{ 
+                      width: '100%',
+                      maxWidth: '650px',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0px 10px 20px rgba(99, 102, 241, 0.25))',
+                      transform: 'scale(1.1)' 
+                  }} 
                 />
               </Box>
             </Box>
