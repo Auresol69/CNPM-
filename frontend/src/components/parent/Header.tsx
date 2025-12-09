@@ -4,9 +4,10 @@ import { MenuIcon, BellIcon, UserIcon } from './Icons';
 interface HeaderProps {
   title: string;
   onMenuClick: () => void;
+  unreadCount?: number;
 }
 
-export default function Header({ title, onMenuClick }: HeaderProps) {
+export default function Header({ title, onMenuClick, unreadCount = 0 }: HeaderProps) {
   const navigate = useNavigate();
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 lg:px-8 z-20 sticky top-0">
@@ -30,7 +31,9 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
         >
           <BellIcon className="w-6 h-6" />
-          <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-2 right-2 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"></span>
+          )}
         </button>
 
         {/* User Profile Snippet */}

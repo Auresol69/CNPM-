@@ -25,10 +25,21 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }: { to: string; icon: Rea
   );
 };
 
+import useSocket from '../../hooks/useSocket';
+
 export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Socket for Global Notifications
+  useSocket({
+    'notification:new': () => {
+      console.log('🔔 Layout: New notification received');
+      setUnreadCount(prev => prev + 1);
+    }
+  });
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -121,7 +132,11 @@ export default function Layout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Unified Header */}
-        <Header title={getPageTitle()} onMenuClick={() => setIsSidebarOpen(true)} />
+        <Header 
+          title={getPageTitle()} 
+          onMenuClick={() => setIsSidebarOpen(true)} 
+          unreadCount={unreadCount}
+        />
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto scroll-smooth bg-slate-50">
