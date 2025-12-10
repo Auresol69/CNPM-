@@ -38,13 +38,23 @@ module.exports = (io) => {
                 try {
                     decode = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
                     const user = await User.findById(decode.id).select('+isActive');
-                    if (!user || !user.isActive)
+                    
+                    if (!user) {
+                        console.error(`❌ Socket Auth Failed: User ${decode.id} not found in DB`);
                         return next(new AppError('Authentication error: User not found or inactive.', 401));
+                    }
+                    
+                    if (!user.isActive) {
+                        console.error(`❌ Socket Auth Failed: User ${user.id} is inactive (role: ${user.role})`);
+                        return next(new AppError('Authentication error: User not found or inactive.', 401));
+                    }
 
                     socket.user = user;
+                    console.log(`✅ Socket Auth Success: ${user.role} ${user.id} connected`);
                     return next();
 
                 } catch (error) {
+                    console.error('❌ Socket Auth Failed: Invalid token -', error.message);
                     return next(new AppError('Authentication error: Invalid token.', 401));
                 }
             }
