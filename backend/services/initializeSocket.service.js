@@ -524,9 +524,10 @@ module.exports = (io) => {
 
             const MIN_DISTANCE_THRESHOLD = 0.001; // km
             const DB_SAVE_INTERVAL_MS = 10000; // ms
-            const DISTANCE_APPROACHING = 0.3; // 300m: sắp tới
-            const DISTANCE_ARRIVED = 0.2;      // 200m: đã tới
-            const DISTANCE_DEPARTED = 0.2;    // Đi xa trạm cũ 200m: đã rời đi
+            // 🔥 Giảm threshold vì khoảng cách tối thiểu giữa các trạm chỉ 150m
+            const DISTANCE_APPROACHING = 0.1;  // 100m: sắp tới
+            const DISTANCE_ARRIVED = 0.05;     // 50m: đã tới
+            const DISTANCE_DEPARTED = 0.08;    // 80m: đã rời đi (phải > ARRIVED)
             const ROUTE_DEVIATION_THRESHOLD = 50; // m
 
             // QUAN TRỌNG: Không cho join bất kỳ phòng nào cả
