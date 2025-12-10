@@ -371,13 +371,7 @@ module.exports = (io) => {
                     if (trip.driverId.toString() !== driverId.toString())
                         return socket.emit('trip:error', 'Bạn không được gán cho chuyến này.');
 
-                    if (trip.status !== 'NOT_STARTED') {
-                        console.log(`Driver ${driverId} đã RESUME chuyến ${trip._id.toString()}`);
-                    } else {
-                        trip.status = 'IN_PROGRESS';
-                        trip.actualStartTime = new Date();
-                        await trip.save();
-                    }
+                    // Không update DB ở đây vì Bus socket sẽ update khi emit driver:start_trip
 
                     console.log(`🚀 Driver ${driverId} đã BẮT ĐẦU chuyến ${tripId} từ app`);
                     // Không emit ở đây vì Bus socket sẽ emit sau khi nhận server:start_trip
@@ -428,16 +422,7 @@ module.exports = (io) => {
 
                     const tripId = activeTrip._id.toString();
 
-                    // Cập nhật DB
-                    await Trip.updateOne(
-                        { _id: tripId },
-                        {
-                            $set: {
-                                status: 'COMPLETED',
-                                actualEndTime: new Date()
-                            }
-                        }
-                    );
+                    // Không update DB ở đây vì Bus socket sẽ update khi emit driver:end_trip
 
                     console.log(`🏁 Driver ${driverId} đã KẾT THÚC chuyến ${tripId} từ app`);
                     // Không emit ở đây vì Bus socket sẽ emit sau khi nhận server:end_trip
@@ -711,6 +696,14 @@ module.exports = (io) => {
                     state.nextStationIndex++;
                     state.hasNotifiedApproaching = false;
                     state.hasNotifiedArrived = false;
+
+                    // Emit ngay khi nextStationIndex thay đổi
+                    // để client cập nhật kịp luck (không phải chờ coords thay đổi)
+                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', {
+                        coords: newCoords,
+                        nextStationIndex: state.nextStationIndex,
+                        totalStations: stops.length
+                    });
 
                     await Trip.updateOne(
                         {
