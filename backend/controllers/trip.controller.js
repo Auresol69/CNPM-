@@ -65,6 +65,14 @@ exports.getTrip = catchAsync(async (req, res, next) => {
                 path: 'orderedStops',
                 select: 'name address'
             }
+        })
+        .populate({
+            path: 'driverId',
+            select: 'name'
+        })
+        .populate({
+            path: 'busId',
+            select: 'licensePlate'
         });
 
     if (!trip)

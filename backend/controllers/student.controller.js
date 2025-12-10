@@ -6,6 +6,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const FaceData = require('../models/faceData.model');
 const { uploadToCloudinary } = require('../utils/cloudinary');
+const factory = require('../utils/handlerFactory');
 
 exports.getAllStudent = catchAsync(async (req, res, next) => {
     const MAX_LIMIT = 100;
@@ -131,3 +132,9 @@ exports.registerStudentFace = catchAsync(async (req, res, next) => {
         }
     });
 });
+
+// CRUD operations using factory
+exports.getStudent = factory.selectOne(Student);
+exports.createStudent = factory.createOne(Student);
+exports.updateStudent = factory.updateOne(Student);
+exports.deleteStudent = factory.deleteOne(Student);
