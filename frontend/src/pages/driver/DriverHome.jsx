@@ -18,7 +18,7 @@ import {
 import RouteMap from '../../components/maps/RouteMap';
 import FaceIDCheckin from '../../components/driver/FaceIDCheckin';
 import { useRouteTracking } from '../../context/RouteTrackingContext';
-import { getMySchedule, getTrip, transformTripToUIFormat } from '../../services/tripService';
+import { getMySchedule, getTrip, transformTripToUIFormat, checkIn, markAsAbsent } from '../../services/tripService';
 import {
   connectSocket,
   joinTripRoom,
@@ -27,6 +27,7 @@ import {
   onBusApproaching,
   onBusArrived,
   onBusDeparted,
+  onBusLocationChanged,
   onAlertNew,
   emitStartTrip,
   emitEndTrip,
@@ -42,35 +43,50 @@ export default function DriverHome() {
 
   const {
     isTracking,
-    currentStationIndex,
-    currentStation,
-    currentRoute,
-    stations = [],
-    currentStudents = [],
-    studentCheckIns = {},
-    checkInStudent = () => { },
-    markAbsentStudent = () => { },
     stationTimer = 0,
     isStationActive = false,
     startTracking,
     stopTracking,
     lastStoppedState,
-    forceDepart,
     // Context sẽ có hàm init nếu bạn dùng (khuyến khích)
     initializeTracking,
   } = useRouteTracking();
 
-  // Tính toán trạng thái - Ưu tiên dùng tripData từ API
-  const effectiveStations = apiStations.length > 0 ? apiStations : stations;
+  // Tính toán trạng thái - CHỈ dùng tripData từ API (không fallback mock)
+  const effectiveStations = apiStations; // Chỉ dùng API data
   const effectiveTotalStudents = tripData?.totalStudents || 0;
   const effectiveCompletedStudents = tripData?.completedStudents || 0;
-  const effectiveCurrentStationIdx = tripData?.nextStationIndex || currentStationIndex;
-  const effectiveCurrentStation = effectiveStations[effectiveCurrentStationIdx] || currentStation;
+  const effectiveCurrentStationIdx = tripData?.nextStationIndex ?? 0; // Chỉ dùng API data
+  const effectiveCurrentStation = effectiveStations[effectiveCurrentStationIdx] || null;
 
-  // Students tại trạm hiện tại từ API
+  // Students tại trạm hiện tại - Lấy trực tiếp từ station.students
   const studentsAtCurrentStation = useMemo(() => {
-    if (!tripData?.students || !effectiveCurrentStation) return [];
-    return tripData.students.filter(s => s.stationId === effectiveCurrentStation.id);
+    // Ưu tiên lấy từ station.students (đã được map trong tripService)
+    if (effectiveCurrentStation?.students?.length > 0) {
+      console.log('[DriverHome] Using station.students:', effectiveCurrentStation.students.length);
+      return effectiveCurrentStation.students;
+    }
+
+    // Fallback: filter từ tripData.students nếu station.students không có
+    if (!tripData?.students) {
+      console.log('[DriverHome] No tripData.students');
+      return [];
+    }
+
+    if (!effectiveCurrentStation) {
+      console.log('[DriverHome] No effectiveCurrentStation');
+      return [];
+    }
+
+    const currentStationId = String(effectiveCurrentStation.id);
+    console.log('[DriverHome] Current station ID:', currentStationId);
+
+    // Filter students by stationId - KHÔNG fallback nếu không có học sinh
+    const filtered = tripData.students.filter(s => String(s.stationId) === currentStationId);
+    console.log('[DriverHome] Students at current station:', filtered.length);
+
+    // Trả về empty nếu trạm không có học sinh
+    return filtered;
   }, [tripData?.students, effectiveCurrentStation]);
 
   const checkedCount = studentsAtCurrentStation.filter(
@@ -82,8 +98,63 @@ export default function DriverHome() {
   const isCheckingIn = isStationActive && stationTimer > 0;
   const isMoving = isTracking && !isStationActive && !isCheckingIn;
 
+  // Hàm refresh tripData từ API
+  const refreshTripData = async () => {
+    if (!tripData?.id) return;
+    try {
+      const tripDetail = await getTrip(tripData.id);
+      if (tripDetail) {
+        const transformed = transformTripToUIFormat(tripDetail);
+        setTripData(transformed);
+        console.log('[DriverHome] Trip data refreshed');
+      }
+    } catch (err) {
+      console.error('[DriverHome] Refresh trip data failed:', err);
+    }
+  };
+
+  // Hàm check-in học sinh - gọi API thực và refresh data
+  const handleCheckIn = async (studentId) => {
+    if (!tripData?.id) {
+      console.error('[DriverHome] No tripId for check-in');
+      return;
+    }
+    try {
+      await checkIn(tripData.id, {
+        studentId,
+        stationId: effectiveCurrentStation?.id,
+      });
+      console.log('[DriverHome] Check-in success for student:', studentId);
+      // Refresh tripData để lấy status mới từ server
+      await refreshTripData();
+    } catch (err) {
+      console.error('[DriverHome] Check-in failed:', err);
+      setSocketAlert({ type: 'error', message: 'Check-in thất bại: ' + (err.message || 'Lỗi không xác định') });
+    }
+  };
+
+  // Hàm đánh dấu vắng - gọi API thực và refresh data
+  const handleMarkAbsent = async (studentId) => {
+    if (!tripData?.id) {
+      console.error('[DriverHome] No tripId for mark absent');
+      return;
+    }
+    try {
+      await markAsAbsent(tripData.id, studentId);
+      console.log('[DriverHome] Mark absent success for student:', studentId);
+      // Refresh tripData để lấy status mới từ server
+      await refreshTripData();
+    } catch (err) {
+      console.error('[DriverHome] Mark absent failed:', err);
+      setSocketAlert({ type: 'error', message: 'Đánh dấu vắng thất bại: ' + (err.message || 'Lỗi không xác định') });
+    }
+  };
+
   // Tự động fetch lịch trình và chi tiết trip khi vào trang
   // Có caching trong localStorage để tránh gọi API liên tục
+  // CACHE_VERSION: Tăng khi cấu trúc data thay đổi để invalidate cache cũ
+  const CACHE_VERSION = 3; // v3: debug logs cho station matching
+
   useEffect(() => {
     const initSchedule = async () => {
       try {
@@ -91,31 +162,58 @@ export default function DriverHome() {
         setError(null);
 
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const routeCacheKey = `driver_route_cache_${today}`; // Cache từ login prefetch
-        const tripCacheKey = `driver_trip_${today}`; // Cache cũ
+        const routeCacheKey = `driver_route_cache_${today}`;
+        const tripCacheKey = `driver_trip_${today}`;
         const cacheExpiry = 30 * 60 * 1000; // 30 phút
 
         // 1. Kiểm tra cache từ login prefetch (ưu tiên cao nhất)
         const routeCache = localStorage.getItem(routeCacheKey);
         if (routeCache) {
           try {
-            const { routeData, activeTrip, timestamp } = JSON.parse(routeCache);
-            if (Date.now() - timestamp < cacheExpiry && routeData) {
-              console.log('[DriverHome] Using login prefetch cache');
+            const { routeData, activeTrip, timestamp, version } = JSON.parse(routeCache);
+            // Kiểm tra version và expiry
+            if (Date.now() - timestamp < cacheExpiry && routeData && version === CACHE_VERSION) {
+              console.log('[DriverHome] Using login prefetch cache v' + version);
+
+              // Tạo map studentStops -> stationId
+              const stationStudentsMap = {};
+              (activeTrip?.studentStops || []).forEach(ss => {
+                const stationId = String(ss.stationId?._id || ss.stationId);
+                if (!stationStudentsMap[stationId]) {
+                  stationStudentsMap[stationId] = [];
+                }
+                stationStudentsMap[stationId].push({
+                  id: ss.studentId?._id || ss.studentId,
+                  name: ss.studentId?.name || 'N/A',
+                  grade: ss.studentId?.grade || '',
+                  status: ss.action || 'PENDING',
+                  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${ss.studentId?._id || ss.studentId}`
+                });
+              });
 
               // Transform routeData sang format cần thiết
               const transformed = {
                 id: activeTrip?._id,
                 routeName: routeData.routeName,
                 routeShape: routeData.shape,
-                stations: routeData.stops?.map((stop, idx) => ({
-                  id: stop._id,
-                  name: stop.name,
-                  position: stop.address?.location?.coordinates
-                    ? [stop.address.location.coordinates[1], stop.address.location.coordinates[0]] // [lat, lng]
-                    : null,
-                  order: idx
-                })) || [],
+                stations: routeData.stops?.map((stop, idx) => {
+                  const stationId = String(stop._id);
+                  return {
+                    id: stationId,
+                    name: stop.name,
+                    position: stop.address?.location?.coordinates
+                      ? [stop.address.location.coordinates[1], stop.address.location.coordinates[0]]
+                      : null,
+                    order: idx,
+                    students: stationStudentsMap[stationId] || []
+                  };
+                }) || [],
+                students: (activeTrip?.studentStops || []).map(ss => ({
+                  id: ss.studentId?._id || ss.studentId,
+                  name: ss.studentId?.name || 'N/A',
+                  stationId: String(ss.stationId?._id || ss.stationId),
+                  status: ss.action || 'PENDING'
+                })),
                 totalStudents: activeTrip?.studentStops?.length || 0,
                 distance: routeData.distance,
                 duration: routeData.duration
@@ -128,19 +226,23 @@ export default function DriverHome() {
               }
               setLoading(false);
               return; // Dùng cache, không gọi API
+            } else if (version !== CACHE_VERSION) {
+              console.log('[DriverHome] Cache version mismatch, clearing...');
+              localStorage.removeItem(routeCacheKey);
             }
           } catch (e) {
             console.warn('[DriverHome] Route cache parse failed');
           }
         }
 
-        // 2. Kiểm tra cache cũ (driver_trip)
+        // 2. Kiểm tra cache cũ (driver_trip) - CẦN version check
         const tripCache = localStorage.getItem(tripCacheKey);
         if (tripCache) {
           try {
-            const { data, timestamp } = JSON.parse(tripCache);
-            if (Date.now() - timestamp < cacheExpiry) {
-              console.log('[DriverHome] Using trip cache');
+            const { data, timestamp, version } = JSON.parse(tripCache);
+            // Chỉ dùng cache nếu version khớp
+            if (Date.now() - timestamp < cacheExpiry && version === CACHE_VERSION) {
+              console.log('[DriverHome] Using trip cache v' + version);
               setTripData(data.tripData);
               setApiStations(data.apiStations || []);
               if (initializeTracking && data.activeTrip) {
@@ -148,9 +250,14 @@ export default function DriverHome() {
               }
               setLoading(false);
               return;
+            } else {
+              // Cache cũ hoặc version không khớp → xóa
+              console.log('[DriverHome] Trip cache outdated/version mismatch, clearing...');
+              localStorage.removeItem(tripCacheKey);
             }
           } catch (e) {
             console.warn('[DriverHome] Trip cache parse failed');
+            localStorage.removeItem(tripCacheKey);
           }
         }
 
@@ -188,12 +295,13 @@ export default function DriverHome() {
               console.log('[DriverHome] API stations loaded:', stations.length);
             }
 
-            // 6. Lưu vào cache
-            localStorage.setItem(cacheKey, JSON.stringify({
+            // 6. Lưu vào cache với version
+            localStorage.setItem(tripCacheKey, JSON.stringify({
               data: { tripData: transformed, apiStations: stations, activeTrip },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              version: CACHE_VERSION
             }));
-            console.log('[DriverHome] Trip data cached');
+            console.log('[DriverHome] Trip data cached with version', CACHE_VERSION);
           }
 
           // Vẫn gọi initializeTracking nếu context cần
@@ -264,6 +372,22 @@ export default function DriverHome() {
       setSocketAlert({ type: 'error', message: data.message || 'Có cảnh báo mới' });
     });
 
+    // Lắng nghe cập nhật vị trí xe - Cập nhật nextStationIndex
+    onBusLocationChanged((data) => {
+      console.log('[Socket] bus:location_changed:', data);
+      // Backend gửi: { coords, nextStationIndex, totalStations }
+      if (data.nextStationIndex !== undefined) {
+        setTripData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            nextStationIndex: data.nextStationIndex,
+          };
+        });
+        console.log('[DriverHome] Updated nextStationIndex:', data.nextStationIndex);
+      }
+    });
+
     socketListenersSetRef.current = true;
 
     return () => {
@@ -285,7 +409,7 @@ export default function DriverHome() {
     );
   }
 
-  if (error && !currentRoute) {
+  if (error && !tripData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
@@ -365,34 +489,18 @@ export default function DriverHome() {
                 </div>
               </div>
 
-              {/* NÚT BẮT ĐẦU / TẠM DỪNG */}
-              {!tripCompleted && (
+              {/* NÚT BẮT ĐẦU - Chỉ hiện khi chưa bắt đầu */}
+              {!tripCompleted && !isTracking && (
                 <button
                   onClick={() => {
-                    if (isTracking) {
-                      stopTracking();
-                    } else {
-                      if (tripData?.id) emitStartTrip(tripData.id);
-                      startTracking();
-                    }
+                    if (tripData?.id) emitStartTrip(tripData.id);
+                    startTracking();
                   }}
                   disabled={loading || !tripData?.id}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-xl font-bold text-lg shadow-2xl transition-all transform hover:scale-105 disabled:opacity-70 ${isTracking
-                    ? 'bg-gradient-to-r from-red-500 to-pink-600'
-                    : 'bg-gradient-to-r from-green-500 to-emerald-600'
-                    }`}
+                  className="flex items-center gap-3 px-6 py-3 rounded-xl font-bold text-lg shadow-2xl transition-all transform hover:scale-105 disabled:opacity-70 bg-gradient-to-r from-green-500 to-emerald-600"
                 >
-                  {isTracking ? (
-                    <>
-                      <PauseCircle className="w-8 h-8" />
-                      TẠM DỪNG
-                    </>
-                  ) : (
-                    <>
-                      <PlayCircle className="w-8 h-8" />
-                      BẮT ĐẦU
-                    </>
-                  )}
+                  <PlayCircle className="w-8 h-8" />
+                  BẮT ĐẦU
                 </button>
               )}
 
@@ -468,8 +576,8 @@ export default function DriverHome() {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-4 border-indigo-100">
           <div className="h-96">
             <RouteMap
-              center={(apiStations[0]?.position || stations[0]?.position) || [10.7623, 106.7056]}
-              stops={(apiStations.length > 0 ? apiStations : stations).map(s => ({
+              center={apiStations[0]?.position || [10.7623, 106.7056]}
+              stops={apiStations.map(s => ({
                 id: s.id,
                 name: s.name,
                 position: s.position,
@@ -480,7 +588,7 @@ export default function DriverHome() {
               isCheckingIn={isCheckingIn}
               isAtStation={isStationActive}
               isMoving={isMoving}
-              currentStationIndex={currentStationIndex}
+              currentStationIndex={effectiveCurrentStationIdx}
               lastStoppedPosition={lastStoppedState?.position}
             />
           </div>
@@ -502,12 +610,12 @@ export default function DriverHome() {
         )}
 
         {/* CHECK-IN PANEL */}
-        {isTracking && isStationActive && currentStationIndex < stations.length - 1 && (
+        {isTracking && isStationActive && effectiveCurrentStationIdx < effectiveStations.length - 1 && (
           <div className="bg-gradient-to-br from-purple-700 via-pink-600 to-red-600 text-white rounded-3xl shadow-2xl p-6 border-4 border-white">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold flex items-center justify-center gap-4">
                 <Bus className="w-10 h-10 animate-bounce" />
-                ĐANG DỪNG TẠI: {currentStation?.name?.toUpperCase()}
+                ĐANG DỪNG TẠI: {effectiveCurrentStation?.name?.toUpperCase() || 'TRẠM'}
               </h3>
 
               {isWaitingToStartCheckIn && (
@@ -517,11 +625,7 @@ export default function DriverHome() {
                 </div>
               )}
 
-              {isCheckingIn && (
-                <div className={`mt-4 text-5xl font-bold ${stationTimer <= 10 ? 'text-red-300 animate-pulse' : 'text-yellow-200'}`}>
-                  {stationTimer}s
-                </div>
-              )}
+              {/* Timer removed per user request */}
 
               {allChecked && (
                 <div className="mt-4 text-2xl font-bold text-yellow-200 animate-bounce">
@@ -540,14 +644,18 @@ export default function DriverHome() {
                   <p className="text-center py-8 text-lg opacity-90">Trạm trường - Không có học sinh</p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {currentStudents.map(student => {
-                      const status = studentCheckIns[student.id];
+                    {studentsAtCurrentStation.map(student => {
+                      // Sử dụng status từ API thay vì mock studentCheckIns
+                      const isCheckedIn = student.status === 'PICKED_UP' || student.status === 'DROPPED_OFF';
+                      const isAbsent = student.status === 'ABSENT';
+                      const isPending = student.status === 'PENDING' || !student.status;
+
                       return (
                         <div
                           key={student.id}
-                          className={`p-4 rounded-2xl text-center border-4 transition-all transform hover:scale-105 ${status === 'present'
+                          className={`p-4 rounded-2xl text-center border-4 transition-all transform hover:scale-105 ${isCheckedIn
                             ? 'bg-green-600 border-green-400 shadow-lg'
-                            : status === 'absent'
+                            : isAbsent
                               ? 'bg-red-600 border-red-400 line-through'
                               : 'bg-white/40 border-white hover:bg-white/60'
                             }`}
@@ -559,21 +667,23 @@ export default function DriverHome() {
                             className="w-16 h-16 rounded-full mx-auto mb-3 shadow-lg"
                           />
 
-                          {!status && (
+                          {isPending && (
                             <div className="space-y-2">
                               <button
-                                onClick={() => checkInStudent(student.id)}
+                                onClick={() => handleCheckIn(student.id)}
                                 className="w-full py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-lg text-sm shadow-lg"
                               >
                                 CÓ MẶT
                               </button>
                               <FaceIDCheckin
                                 student={student}
-                                onCheckIn={checkInStudent}
+                                onCheckIn={handleCheckIn}
                                 isCheckedIn={false}
+                                tripId={tripData?.id}
+                                stationId={effectiveCurrentStation?.id}
                               />
                               <button
-                                onClick={() => markAbsentStudent?.(student.id)}
+                                onClick={() => handleMarkAbsent(student.id)}
                                 className="w-full py-1 text-xs bg-red-500 hover:bg-red-600 rounded"
                               >
                                 Vắng
@@ -581,24 +691,15 @@ export default function DriverHome() {
                             </div>
                           )}
 
-                          {status === 'present' && <CheckCircle className="w-10 h-10 mx-auto mt-3" />}
-                          {status === 'absent' && <XCircle className="w-10 h-10 mx-auto mt-3" />}
+                          {isCheckedIn && <CheckCircle className="w-10 h-10 mx-auto mt-3" />}
+                          {isAbsent && <XCircle className="w-10 h-10 mx-auto mt-3" />}
                         </div>
                       );
                     })}
                   </div>
                 )}
 
-                {forceDepart && (
-                  <div className="text-center mt-6">
-                    <button
-                      onClick={forceDepart}
-                      className="px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:scale-110 transition"
-                    >
-                      RỜI TRẠM NGAY
-                    </button>
-                  </div>
-                )}
+
               </div>
             )}
           </div>
@@ -628,6 +729,6 @@ export default function DriverHome() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

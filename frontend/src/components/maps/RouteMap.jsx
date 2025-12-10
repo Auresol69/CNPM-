@@ -197,6 +197,10 @@ export default function RouteMap({
 }) {
   const [realPath, setRealPath] = useState([]);
 
+  // Stabilize dependencies using JSON.stringify to prevent re-runs on same data
+  const routeShapeKey = JSON.stringify(routeShape);
+  const stopsKey = JSON.stringify(stops.map(s => ({ id: s.id, position: s.position })));
+
   useEffect(() => {
     // Priority 1: Use backend route shape if available
     if (routeShape?.coordinates && Array.isArray(routeShape.coordinates) && routeShape.coordinates.length > 0) {
@@ -227,7 +231,7 @@ export default function RouteMap({
         }
       })
       .catch(() => setRealPath(stops.map((s) => s.position)));
-  }, [routeShape, stops]);
+  }, [routeShapeKey, stopsKey]); // Use stable keys instead of objects
 
   const stopIcon = (index, isCurrent) =>
     L.divIcon({

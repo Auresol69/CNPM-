@@ -339,6 +339,28 @@ export const markAsAbsent = async (tripId, studentId) => {
 export const transformTripToUIFormat = (trip) => {
   if (!trip) return null;
 
+  // Tạo map stationId -> students từ studentStops
+  const stationStudentsMap = {};
+  console.log('[tripService] studentStops count:', trip.studentStops?.length || 0);
+
+  (trip.studentStops || []).forEach(ss => {
+    const stationId = String(ss.stationId?._id || ss.stationId);
+    console.log('[tripService] studentStop stationId:', stationId, 'studentId:', ss.studentId?._id || ss.studentId);
+
+    if (!stationStudentsMap[stationId]) {
+      stationStudentsMap[stationId] = [];
+    }
+    stationStudentsMap[stationId].push({
+      id: ss.studentId?._id || ss.studentId,
+      name: ss.studentId?.name || 'N/A',
+      grade: ss.studentId?.grade || '',
+      status: ss.action, // PENDING, PICKED_UP, DROPPED_OFF, ABSENT
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${ss.studentId?._id || ss.studentId}`
+    });
+  });
+
+  console.log('[tripService] stationStudentsMap keys:', Object.keys(stationStudentsMap));
+
   // Transform orderedStops thành stations array cho map
   const stations = (trip.routeId?.orderedStops || []).map((stop, idx) => {
     // Backend returns [lng, lat], Leaflet needs [lat, lng]
@@ -351,21 +373,27 @@ export const transformTripToUIFormat = (trip) => {
     const stopTime = trip.scheduleId?.stopTimes?.[idx];
     const time = stopTime?.arrivalTime || '--:--';
 
+    const stationId = String(stop._id);
+
     return {
-      id: stop._id,
+      id: stationId,
       name: stop.name || `Trạm ${idx + 1}`,
       position,
       time,
-      address: stop.address?.fullAddress || ''
+      address: stop.address?.fullAddress || '',
+      // Thêm danh sách học sinh tại trạm này
+      students: stationStudentsMap[stationId] || []
     };
   });
 
-  // Transform studentStops thành students array
+  console.log('[tripService] orderedStops station IDs:', stations.map(s => s.id));
+
+  // Transform studentStops thành students array (flat list)
   const students = (trip.studentStops || []).map(ss => ({
     id: ss.studentId?._id || ss.studentId,
     name: ss.studentId?.name || 'N/A',
     grade: ss.studentId?.grade || '',
-    stationId: ss.stationId?._id || ss.stationId,
+    stationId: String(ss.stationId?._id || ss.stationId),
     stationName: ss.stationId?.name || '',
     status: ss.action, // PENDING, PICKED_UP, DROPPED_OFF, ABSENT
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${ss.studentId?._id || ss.studentId}`

@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Camera, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { checkInWithFace } from '../../services/tripService';
 
-export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn }) {
+export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn, tripId, stationId }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [cameraError, setCameraError] = useState(null);
+    const [resultMessage, setResultMessage] = useState(null);
 
     useEffect(() => {
         if (!isCameraActive) return;
@@ -22,6 +24,7 @@ export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn }) {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     setCameraError(null);
+                    setResultMessage(null);
                 }
             } catch (err) {
                 setCameraError('Không thể truy cập camera: ' + err.message);
@@ -41,7 +44,15 @@ export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn }) {
     const handleCaptureFace = async () => {
         if (!videoRef.current || !canvasRef.current) return;
 
+        if (!tripId) {
+            setCameraError('Không tìm thấy thông tin chuyến đi. Vui lòng thử lại.');
+            return;
+        }
+
         setIsProcessing(true);
+        setResultMessage(null);
+        setCameraError(null);
+
         try {
             // Capture image from video
             const ctx = canvasRef.current.getContext('2d');
@@ -49,20 +60,44 @@ export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn }) {
             canvasRef.current.height = videoRef.current.videoHeight;
             ctx.drawImage(videoRef.current, 0, 0);
 
-            // Simulate face detection delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Convert canvas to Blob (File)
+            const blob = await new Promise((resolve, reject) => {
+                canvasRef.current.toBlob(
+                    (b) => b ? resolve(b) : reject(new Error('Không thể tạo ảnh')),
+                    'image/jpeg',
+                    0.9
+                );
+            });
 
-            // In a real app, you would send this to a face recognition API
-            // For now, we'll just mark as checked in
-            onCheckIn(student.id);
-            setIsCameraActive(false);
+            // Create File object from blob
+            const imageFile = new File([blob], `face-checkin-${Date.now()}.jpg`, { type: 'image/jpeg' });
 
-            // Show success feedback
+            // Call API to check-in with face
+            console.log('[FaceIDCheckin] Calling checkInWithFace API...', { tripId, stationId });
+            const result = await checkInWithFace(tripId, imageFile, stationId);
+
+            console.log('[FaceIDCheckin] API response:', result);
+
+            // Success - call onCheckIn with student ID from API response
+            const recognizedStudentId = result?.studentId || student?.id;
+            setResultMessage({ type: 'success', text: '✅ Nhận diện thành công!' });
+
+            // Notify parent component
+            if (onCheckIn && recognizedStudentId) {
+                onCheckIn(recognizedStudentId);
+            }
+
+            // Close camera after short delay to show success message
             setTimeout(() => {
+                setIsCameraActive(false);
                 setIsProcessing(false);
-            }, 500);
+                setResultMessage(null);
+            }, 1500);
+
         } catch (err) {
-            console.error('Face capture error:', err);
+            console.error('[FaceIDCheckin] Error:', err);
+            const errorMsg = err.message || 'Nhận diện khuôn mặt thất bại';
+            setResultMessage({ type: 'error', text: `❌ ${errorMsg}` });
             setIsProcessing(false);
         }
     };
@@ -107,6 +142,15 @@ export default function FaceIDCheckin({ student, onCheckIn, isCheckedIn }) {
                     {cameraError && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
                             {cameraError}
+                        </div>
+                    )}
+
+                    {resultMessage && (
+                        <div className={`px-4 py-3 rounded-lg mb-4 text-sm font-semibold text-center ${resultMessage.type === 'success'
+                                ? 'bg-green-100 border border-green-400 text-green-700'
+                                : 'bg-red-100 border border-red-400 text-red-700'
+                            }`}>
+                            {resultMessage.text}
                         </div>
                     )}
 
