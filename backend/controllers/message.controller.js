@@ -24,11 +24,9 @@ exports.getMyMessage = catchAsync(async (req, res, next) => {
 
     const messages = await features.query;
 
-    if (!messages || messages.length === 0)
-        return next(new AppError('Không tìm thấy lịch sử chat gần đây nhất', 404));
-
     res.status(200).json({
         status: 'success',
+        results: messages.length,
         data: messages
     });
 });
