@@ -347,6 +347,119 @@ module.exports = (io) => {
                 }
             });
 
+            // DRIVER APP: BẮT ĐẦU/KẾT THÚC CHUYẾN
+            // Cho phép User role Driver emit start/end trip từ app
+            // Server sẽ forward event đến Bus socket (simulation) tương ứng
+
+            socket.on('driver:start_trip', async (data) => {
+                if (user.role !== 'Driver') {
+                    return socket.emit('trip:error', 'Chỉ tài xế mới có thể bắt đầu chuyến.');
+                }
+
+                try {
+                    const tripId = data.tripId;
+                    const driverId = user.id;
+
+                    const trip = await Trip.findById(tripId).populate({
+                        path: 'routeId',
+                        populate: { path: 'orderedStops' }
+                    });
+
+                    if (!trip)
+                        return socket.emit('trip:error', 'Trip ID không tồn tại.');
+
+                    if (trip.driverId.toString() !== driverId.toString())
+                        return socket.emit('trip:error', 'Bạn không được gán cho chuyến này.');
+
+                    if (trip.status !== 'NOT_STARTED') {
+                        console.log(`Driver ${driverId} đã RESUME chuyến ${trip._id.toString()}`);
+                    } else {
+                        trip.status = 'IN_PROGRESS';
+                        trip.actualStartTime = new Date();
+                        await trip.save();
+                    }
+
+                    console.log(`🚀 Driver ${driverId} đã BẮT ĐẦU chuyến ${tripId} từ app`);
+                    // Không emit ở đây vì Bus socket sẽ emit sau khi nhận server:start_trip
+                    // socket.emit('trip:started_successfully');
+                    // io.to(`trip_${tripId}`).emit('trip:started');
+
+                    // Forward đến tất cả Bus socket có cùng busId (simulation)
+                    const busId = trip.busId.toString();
+                    for (const [socketId, s] of io.sockets.sockets) {
+                        if (s.bus && s.bus.id === busId) {
+                            console.log(`📡 Forward start_trip đến Bus socket ${socketId}`);
+                            s.emit('server:start_trip', { 
+                                tripId: tripId,
+                                routeStops: trip.routeId.orderedStops.map(stop => ({
+                                    id: stop._id.toString(),
+                                    name: stop.name,
+                                    lat: stop.address.location.coordinates[1],
+                                    lng: stop.address.location.coordinates[0]
+                                })),
+                                routeShape: trip.routeId.shape
+                            });
+                        }
+                    }
+
+                } catch (error) {
+                    console.error(`Lỗi khi Driver ${user.id} bắt đầu chuyến:`, error.message);
+                    socket.emit('trip:error', 'Lỗi server khi bắt đầu chuyến đi.');
+                }
+            });
+
+            socket.on('driver:end_trip', async () => {
+                if (user.role !== 'Driver') {
+                    return socket.emit('trip:error', 'Chỉ tài xế mới có thể kết thúc chuyến.');
+                }
+
+                try {
+                    const driverId = user.id;
+
+                    // Tìm chuyến đang chạy của driver này
+                    const activeTrip = await Trip.findOne({
+                        driverId: driverId,
+                        status: 'IN_PROGRESS'
+                    });
+
+                    if (!activeTrip) {
+                        return socket.emit('trip:error', 'Không có chuyến đi nào đang chạy.');
+                    }
+
+                    const tripId = activeTrip._id.toString();
+
+                    // Cập nhật DB
+                    await Trip.updateOne(
+                        { _id: tripId },
+                        {
+                            $set: {
+                                status: 'COMPLETED',
+                                actualEndTime: new Date()
+                            }
+                        }
+                    );
+
+                    console.log(`🏁 Driver ${driverId} đã KẾT THÚC chuyến ${tripId} từ app`);
+                    // Không emit ở đây vì Bus socket sẽ emit sau khi nhận server:end_trip
+                    // socket.emit('trip:ended_successfully');
+                    // io.to(`trip_${tripId}`).emit('trip:completed');
+
+                    // Forward đến Bus socket (simulation)
+                    const busId = activeTrip.busId.toString();
+                    for (const [socketId, s] of io.sockets.sockets) {
+                        if (s.bus && s.bus.id === busId) {
+                            console.log(`📡 Forward end_trip đến Bus socket ${socketId}`);
+                            s.emit('server:end_trip');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error(`Lỗi khi Driver ${user.id} kết thúc chuyến:`, error.message);
+                    socket.emit('trip:error', 'Lỗi server khi kết thúc chuyến đi.');
+                }
+            });
+            // ================== END DRIVER APP ==================
+
             socket.on('disconnect', () => {
                 console.log(`Một NGƯỜI XEM đã ngắt kết nối: ${socket.id} (UserId: ${user.id})`); // Tieng viet cho de hieu
             });
