@@ -50,26 +50,7 @@ function AnimatedBus({
   const map = useMap();
   const [position, setPosition] = useState(null);
 
-  const rafRef = useRef(null);
-  const startRef = useRef(null);
-  const pausedElapsedRef = useRef(0);
-
-  // find nearest index on path for a given point
-  const findClosestIndex = (pt) => {
-    if (!path?.length) return 0;
-    let best = 0;
-    let min = Infinity;
-    for (let i = 0; i < path.length; i++) {
-      const dx = path[i][0] - pt[0];
-      const dy = path[i][1] - pt[1];
-      const d = dx * dx + dy * dy;
-      if (d < min) {
-        min = d;
-        best = i;
-      }
-    }
-    return best;
-  };
+  const rafRef = useRef(null); // Keep for cleanup
 
   // decide moving state if not passed explicitly
   const computedIsMoving = isMoving ?? (isTracking && !isAtStation && !isCheckingIn);
@@ -87,9 +68,11 @@ function AnimatedBus({
   }, [persistStopped, isAtStation, position]);
 
   useEffect(() => {
-    // if not tracking => show lastStoppedPosition or start point
+    // Cancel any ongoing animation
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    // Nếu không tracking → hiển thị lastStoppedPosition hoặc điểm đầu
     if (!isTracking) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (lastStoppedPosition) {
         setPosition(lastStoppedPosition);
         try { map.panTo(lastStoppedPosition); } catch (e) { console.error(e); }
@@ -97,62 +80,24 @@ function AnimatedBus({
         setPosition(path[0]);
         try { map.panTo(path[0]); } catch (e) { console.error(e); }
       }
-      startRef.current = null;
       return;
     }
 
-    // if at station or checking in -> pause animation and show stopped pos (prefer lastStoppedPosition)
-    if (isAtStation || isCheckingIn) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      if (lastStoppedPosition) {
-        setPosition(lastStoppedPosition);
-        try { map.panTo(lastStoppedPosition); } catch (e) { console.error(e); }
-      }
-      // don't start animation
-      return;
+    // Nếu đang tracking → hiển thị lastStoppedPosition (vị trí thực từ GPS)
+    // KHÔNG tự động di chuyển - chỉ cập nhật khi nhận GPS mới từ socket
+    if (lastStoppedPosition) {
+      setPosition(lastStoppedPosition);
+      try { map.panTo(lastStoppedPosition); } catch (e) { console.error(e); }
+    } else if (path.length > 0) {
+      setPosition(path[0]);
+      try { map.panTo(path[0]); } catch (e) { console.error(e); }
     }
 
-    // resume animation from lastStoppedPosition if exists
-    if (!startRef.current) {
-      const total = 240000; // full route simulated duration
-      if (lastStoppedPosition) {
-        const idx = findClosestIndex(lastStoppedPosition);
-        const progress = Math.min(Math.max(idx / Math.max(1, path.length - 1), 0), 1);
-        pausedElapsedRef.current = total * progress;
-        startRef.current = Date.now() - pausedElapsedRef.current;
-        setPosition(lastStoppedPosition);
-        try { map.panTo(lastStoppedPosition); } catch (e) { console.error(e); }
-      } else {
-        startRef.current = Date.now();
-        if (path.length > 0) {
-          setPosition(path[0]);
-          try { map.panTo(path[0]); } catch (e) { console.error(e); }
-        }
-      }
-    }
-
-    const animate = () => {
-      const total = 240000;
-      const elapsed = Date.now() - startRef.current;
-      const progress = Math.min(elapsed / total, 1);
-      const idx = Math.floor(progress * (path.length - 1));
-      const pos = path[idx] || path[path.length - 1] || null;
-      if (pos) {
-        setPosition(pos);
-        try { map.panTo(pos, { animate: true, duration: 0.6 }); } catch (e) { console.error(e); }
-      }
-
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-
+    // Cleanup
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isTracking, isAtStation, isCheckingIn, path, lastStoppedPosition, map, isMoving]);
+  }, [isTracking, isAtStation, isCheckingIn, path, lastStoppedPosition, map]);
 
   if (!position) return null;
 

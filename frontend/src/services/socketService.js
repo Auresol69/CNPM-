@@ -389,9 +389,21 @@ export const sendDriverAlert = (type, message) => {
  * @param {string} tripId - ID của trip
  */
 export const emitStartTrip = (tripId) => {
-  if (socket) {
+  // Ensure socket is connected
+  if (!socket) {
+    console.warn('[Socket] Socket not connected, attempting to connect...');
+    const newSocket = connectSocket();
+    if (!newSocket) {
+      console.error('[Socket] Cannot emit driver:start_trip - socket connection failed');
+      return;
+    }
+  }
+
+  if (socket && socket.connected) {
     socket.emit('driver:start_trip', { tripId });
-    console.log('[Socket] Đã gửi driver:start_trip:', tripId);
+    console.log('[Socket] ✅ Đã gửi driver:start_trip:', tripId);
+  } else {
+    console.error('[Socket] ❌ Cannot emit driver:start_trip - socket not connected');
   }
 };
 
@@ -400,9 +412,21 @@ export const emitStartTrip = (tripId) => {
  * @param {string} tripId - ID của trip
  */
 export const emitEndTrip = (tripId) => {
-  if (socket) {
+  // Ensure socket is connected
+  if (!socket) {
+    console.warn('[Socket] Socket not connected, attempting to connect...');
+    const newSocket = connectSocket();
+    if (!newSocket) {
+      console.error('[Socket] Cannot emit driver:end_trip - socket connection failed');
+      return;
+    }
+  }
+
+  if (socket && socket.connected) {
     socket.emit('driver:end_trip', { tripId });
-    console.log('[Socket] Đã gửi driver:end_trip:', tripId);
+    console.log('[Socket] ✅ Đã gửi driver:end_trip:', tripId);
+  } else {
+    console.error('[Socket] ❌ Cannot emit driver:end_trip - socket not connected');
   }
 };
 
