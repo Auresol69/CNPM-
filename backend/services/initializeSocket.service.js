@@ -179,8 +179,7 @@ module.exports = (io) => {
                             tripExists = true;
                         }
                     }
-
-                    if (user.role === 'Driver'){
+                    else if (user.role === 'Driver'){
 
                         const trip = await Trip.findOne({
                             _id: tripId,
@@ -192,7 +191,6 @@ module.exports = (io) => {
                             tripExists = true;
                         }
                     }
-
                     else if (user.role === 'Parent') {
                         // Xu ly tac vu check xem co con minh trong chuyen do khong
 
