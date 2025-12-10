@@ -453,7 +453,11 @@ module.exports = (io) => {
                     socket.lastDbUpdatedTime = currentTime;
 
                 if (!socket.prevCoords) {
-                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', newCoords);
+                    io.to(`trip_${validatedTripId}`).emit('bus:location_changed', {
+                        coords: newCoords,
+                        nextStationIndex: socket.trackingState.nextStationIndex,
+                        totalStations: socket.routeStops.length
+                    });
 
                     Bus.updateCurrentStatus(busId, newCoords)
                         .catch(err => console.error(`Lỗi cập nhật status bus ${busId}:`, err));
@@ -504,7 +508,11 @@ module.exports = (io) => {
                     // Phụ huynh mất mạng.
                     // Xe buýt gửi B, C, D (với cờ volatile).
                     // Server thấy phụ huynh đang offline -> VỨT LUÔN B, C, D. Không lưu trữ gì cả.
-                    io.to(`trip_${validatedTripId}`).volatile.emit('bus:location_changed', newCoords);
+                    io.to(`trip_${validatedTripId}`).volatile.emit('bus:location_changed', {
+                        coords: newCoords,
+                        nextStationIndex: socket.trackingState.nextStationIndex,
+                        totalStations: socket.routeStops.length
+                    });
 
                     // Uu tien 2 => KHONG DUNG await de tranh tac nghen
                     if ((currentTime - socket.lastDbUpdatedTime) > DB_SAVE_INTERVAL_MS) {
@@ -663,6 +671,9 @@ module.exports = (io) => {
                     if (!validatedTripId) {
                         return socket.emit('trip:error', 'Không thể kết thúc chuyến đi chưa bắt đầu.');
                     }
+
+                    if (socket.trackingState.nextStationIndex !== socket.routeStops.length)
+                        return socket.emit('trip:error', 'Không thể kết thúc chuyến đi khi chưa tới trạm cuối');
 
                     // 1. Cập nhật CSDL
                     // Dùng await vì đây là tác vụ quan trọng
