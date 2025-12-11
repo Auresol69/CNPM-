@@ -1,5 +1,5 @@
 // src/pages/driver/DriverHome.jsx
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   MapPin,
   Users,
@@ -60,6 +60,16 @@ export default function DriverHome() {
   const effectiveCompletedStudents = tripData?.completedStudents || 0;
   const effectiveCurrentStationIdx = tripData?.nextStationIndex ?? 0; // Chỉ dùng API data
   const effectiveCurrentStation = effectiveStations[effectiveCurrentStationIdx] || null;
+
+  // Memoize stops array để tránh re-render không cần thiết
+  const memoizedStops = useMemo(() => {
+    return apiStations.map(s => ({
+      id: s.id,
+      name: s.name,
+      position: s.position,
+      time: s.time,
+    }));
+  }, [apiStations]);
 
   // Students tại trạm hiện tại - Lấy trực tiếp từ station.students
   const studentsAtCurrentStation = useMemo(() => {
@@ -601,9 +611,9 @@ export default function DriverHome() {
           <div className="h-96">
             <RouteMapWithBackend
               center={apiStations[0]?.position || [10.7623, 106.7056]}
-              stops={apiStations}  // Không cần map lại, apiStations đã có đúng format
+              stops={memoizedStops}
               routeShape={tripData?.routeShape}
-              tripId={tripData?.id}  // ← QUAN TRỌNG: Enable Socket.IO tracking!
+              tripId={tripData?.id}
               isTracking={isTracking}
               currentStationIndex={effectiveCurrentStationIdx}
             />
