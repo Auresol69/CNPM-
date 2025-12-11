@@ -816,7 +816,13 @@ module.exports = (io) => {
                         // 2. Thông báo cho Phụ huynh/Admin
                         io.to(`trip_${validatedTripId}`).emit('trip:completed');
 
-                        // 3. Dọn dẹp
+                        // 3. Thông báo riêng cho Driver (để app biết và cho bấm nút hoàn thành)
+                        io.to(`user:${socket.driverId}`).emit('trip:completed', {
+                            tripId: validatedTripId,
+                            message: 'Chuyến đi đã hoàn thành!'
+                        });
+
+                        // 4. Dọn dẹp
                         socket.tripId = null;
                     }
 
