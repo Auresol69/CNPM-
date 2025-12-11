@@ -38,12 +38,12 @@ module.exports = (io) => {
                 try {
                     decode = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
                     const user = await User.findById(decode.id).select('+isActive');
-                    
+
                     if (!user) {
                         console.error(`❌ Socket Auth Failed: User ${decode.id} not found in DB`);
                         return next(new AppError('Authentication error: User not found or inactive.', 401));
                     }
-                    
+
                     if (!user.isActive) {
                         console.error(`❌ Socket Auth Failed: User ${user.id} is inactive (role: ${user.role})`);
                         return next(new AppError('Authentication error: User not found or inactive.', 401));
@@ -189,14 +189,14 @@ module.exports = (io) => {
                             tripExists = true;
                         }
                     }
-                    else if (user.role === 'Driver'){
+                    else if (user.role === 'Driver') {
 
                         const trip = await Trip.findOne({
                             _id: tripId,
                             driverId: user.id
                         }).select('_id');
 
-                        if (trip){
+                        if (trip) {
                             isAllowed = true;
                             tripExists = true;
                         }
@@ -260,7 +260,7 @@ module.exports = (io) => {
 
             //     const activeTrips = await Trip.find({
             //         status: 'IN_PROGRESS',
-                    
+
             //     });
             // });
 
@@ -288,6 +288,21 @@ module.exports = (io) => {
                     const senderRole = user.role;
 
                     if (senderRole === 'Parent' || senderRole === 'Driver') {
+                        const receiver = await User.findById(receiverId).select('role');
+
+                        if (!receiver)
+                            return socket.emit('chat:error', 'Người nhận không tồn tại');
+
+                        if (receiver.role === 'Driver' || receiver.role === 'Parent') {
+                            const newMessage = await Message.create({
+                                senderId: senderId,
+                                receiverId: receiverId,
+                                content: content
+                            });
+
+                            return io.to(`user:${receiverId}`).emit('chat:receive_message', newMessage);
+                        }
+
                         const newMessage = await Message.create({
                             senderId: senderId,
                             receiverId: null,
@@ -383,7 +398,7 @@ module.exports = (io) => {
                     for (const [socketId, s] of io.sockets.sockets) {
                         if (s.bus && s.bus.id === busId) {
                             console.log(`📡 Forward start_trip đến Bus socket ${socketId}`);
-                            s.emit('server:start_trip', { 
+                            s.emit('server:start_trip', {
                                 tripId: tripId,
                                 routeStops: trip.routeId.orderedStops.map(stop => ({
                                     id: stop._id.toString(),
@@ -430,9 +445,9 @@ module.exports = (io) => {
                     const totalStations = activeTrip.routeId?.orderedStops?.length || 0;
                     const currentIndex = activeTrip.nextStationIndex || 0;
                     const hasArrivedAtCurrent = activeTrip.hasNotifiedArrived || false;
-                    
+
                     const isAtFinalStationAndArrived = (currentIndex === totalStations - 1) && hasArrivedAtCurrent;
-                    
+
                     if (!isAtFinalStationAndArrived) {
                         const stationsLeft = totalStations - currentIndex - (hasArrivedAtCurrent ? 1 : 0);
                         return socket.emit('trip:error', `Không thể kết thúc chuyến đi. Còn ${stationsLeft} trạm chưa đi qua.`);
@@ -806,9 +821,9 @@ module.exports = (io) => {
                     const totalStations = socket.routeStops.length;
                     const currentIndex = socket.trackingState.nextStationIndex;
                     const hasArrivedAtCurrent = socket.trackingState.hasNotifiedArrived;
-                    
+
                     const isAtFinalStationAndArrived = (currentIndex === totalStations - 1) && hasArrivedAtCurrent;
-                    
+
                     if (!isAtFinalStationAndArrived) {
                         const stationsLeft = totalStations - currentIndex - (hasArrivedAtCurrent ? 1 : 0);
                         return socket.emit('trip:error', `Không thể kết thúc chuyến đi. Còn ${stationsLeft} trạm chưa đi qua.`);
