@@ -424,11 +424,19 @@ module.exports = (io) => {
                     }
 
                     // VALIDATION: Kiểm tra đã đến trạm cuối chưa
+                    // nextStationIndex chỉ tăng khi RỜI trạm, không phải khi TỚI
+                    // Nên cho phép kết thúc nếu:
+                    // 1. Đã rời tất cả trạm (nextStationIndex === totalStations)
+                    // 2. Đang ở trạm cuối và đã TỚI (hasNotifiedArrived = true)
                     const totalStations = activeTrip.routeId?.orderedStops?.length || 0;
                     const currentIndex = activeTrip.nextStationIndex || 0;
+                    const hasArrivedAtCurrent = activeTrip.hasNotifiedArrived || false;
                     
-                    if (currentIndex < totalStations) {
-                        return socket.emit('trip:error', `Không thể kết thúc chuyến đi khi chưa tới trạm cuối (${currentIndex}/${totalStations}).`);
+                    const hasCompletedAllStops = currentIndex >= totalStations;
+                    const isAtFinalStationAndArrived = (currentIndex === totalStations - 1) && hasArrivedAtCurrent;
+                    
+                    if (!hasCompletedAllStops && !isAtFinalStationAndArrived) {
+                        return socket.emit('trip:error', `Không thể kết thúc chuyến đi. Còn ${totalStations - currentIndex} trạm chưa đi qua.`);
                     }
 
                     const tripId = activeTrip._id.toString();
