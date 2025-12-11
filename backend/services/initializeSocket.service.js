@@ -410,14 +410,25 @@ module.exports = (io) => {
                 try {
                     const driverId = user.id;
 
-                    // Tìm chuyến đang chạy của driver này
+                    // Tìm chuyến đang chạy của driver này (populate route để lấy số trạm)
                     const activeTrip = await Trip.findOne({
                         driverId: driverId,
                         status: 'IN_PROGRESS'
+                    }).populate({
+                        path: 'routeId',
+                        select: 'orderedStops'
                     });
 
                     if (!activeTrip) {
                         return socket.emit('trip:error', 'Không có chuyến đi nào đang chạy.');
+                    }
+
+                    // VALIDATION: Kiểm tra đã đến trạm cuối chưa
+                    const totalStations = activeTrip.routeId?.orderedStops?.length || 0;
+                    const currentIndex = activeTrip.nextStationIndex || 0;
+                    
+                    if (currentIndex < totalStations) {
+                        return socket.emit('trip:error', `Không thể kết thúc chuyến đi khi chưa tới trạm cuối (${currentIndex}/${totalStations}).`);
                     }
 
                     const tripId = activeTrip._id.toString();
