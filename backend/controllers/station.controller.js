@@ -26,13 +26,13 @@ exports.createStation = catchAsync(async (req, res, next) => {
         'address.location': {
             $near: {
                 $geometry: newLocation,
-                $maxDistance: 150 // m
+                $maxDistance: 250 // m (phải > APPROACHING + DEPARTED = 200m)
             }
         }
     });
 
     if (existingStation)
-        return next(new AppError(`Không thể tạo. Đã có trạm "${existingStation.name}" nằm quá gần vị trí này (trong vòng 150m).`, 400));
+        return next(new AppError(`Không thể tạo. Đã có trạm "${existingStation.name}" nằm quá gần vị trí này (trong vòng 250m).`, 400));
 
     const newStation = await Station.create({
         name,
