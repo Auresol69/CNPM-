@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import RouteMap from '../../components/maps/RouteMap';
+import RouteMapWithBackend from '../../components/maps/RouteMapWithBackend';
 import FaceIDCheckin from '../../components/driver/FaceIDCheckin';
 import { useRouteTracking } from '../../context/RouteTrackingContext';
 import { getMySchedule, getTrip, transformTripToUIFormat, checkIn, markAsAbsent } from '../../services/tripService';
@@ -596,24 +596,16 @@ export default function DriverHome() {
           </div>
         </div>
 
-        {/* BẢN ĐỒ */}
+        {/* BẢN ĐỒ - Real-time tracking */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-4 border-indigo-100">
           <div className="h-96">
-            <RouteMap
+            <RouteMapWithBackend
               center={apiStations[0]?.position || [10.7623, 106.7056]}
-              stops={apiStations.map(s => ({
-                id: s.id,
-                name: s.name,
-                position: s.position,
-                time: s.time,
-              }))}
+              stops={apiStations}  // Không cần map lại, apiStations đã có đúng format
               routeShape={tripData?.routeShape}
+              tripId={tripData?.id}  // ← QUAN TRỌNG: Enable Socket.IO tracking!
               isTracking={isTracking}
-              isCheckingIn={isCheckingIn}
-              isAtStation={isStationActive}
-              isMoving={isMoving}
               currentStationIndex={effectiveCurrentStationIdx}
-              lastStoppedPosition={lastStoppedState?.position}
             />
           </div>
         </div>
@@ -739,12 +731,12 @@ export default function DriverHome() {
               <div
                 key={s.id}
                 className={`p-5 rounded-2xl text-center font-bold transition-all shadow-md ${tripCompleted
-                    ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white' // Tất cả trạm màu xanh khi hoàn thành
-                    : i < effectiveCurrentStationIdx
-                      ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white'
-                      : i === effectiveCurrentStationIdx
-                        ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white scale-110 shadow-2xl'
-                        : 'bg-gray-100 text-gray-600'
+                  ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white' // Tất cả trạm màu xanh khi hoàn thành
+                  : i < effectiveCurrentStationIdx
+                    ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white'
+                    : i === effectiveCurrentStationIdx
+                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white scale-110 shadow-2xl'
+                      : 'bg-gray-100 text-gray-600'
                   }`}
               >
                 <div className="text-2xl mb-1">{i + 1}</div>

@@ -42,35 +42,73 @@ const busIcon = L.divIcon({
 function RealTimeBus({ tripId, isTracking = false }) {
     const map = useMap();
     const [position, setPosition] = useState(null);
+    const listenerRegisteredRef = React.useRef(false); // Flag để tránh register nhiều lần
+    const currentTripIdRef = React.useRef(null); // Track tripId hiện tại
 
     useEffect(() => {
-        if (!tripId || !isTracking) {
+        if (!tripId) { // Không cần isTracking ở đây, chỉ cần tripId để register listener
             setPosition(null);
+            // Nếu không có tripId, đảm bảo listener được dọn dẹp
+            if (listenerRegisteredRef.current) {
+                console.log('[RealTimeBus] No tripId, cleaning up listener.');
+                offEvent('bus:location_changed');
+                listenerRegisteredRef.current = false;
+                currentTripIdRef.current = null;
+            }
             return;
         }
 
+        // Nếu tripId không đổi và đã register listener rồi, skip
+        if (listenerRegisteredRef.current && currentTripIdRef.current === tripId) {
+            console.log('[RealTimeBus] Listener already registered for trip:', tripId);
+            return;
+        }
+
+        // Cleanup listener cũ nếu có (khi đổi trip)
+        if (listenerRegisteredRef.current && currentTripIdRef.current !== tripId) {
+            console.log('[RealTimeBus] Cleaning up old listener for trip:', currentTripIdRef.current);
+            offEvent('bus:location_changed');
+            listenerRegisteredRef.current = false;
+        }
+
         // Listener cho bus location updates
-        const handleLocationUpdate = (coords) => {
+        // Backend gửi: { coords: {latitude, longitude}, nextStationIndex, totalStations }
+        const handleLocationUpdate = (data) => {
+            console.log('[RealTimeBus] Received location update:', data);
+
+            // Parse đúng data structure từ backend
+            const coords = data?.coords || data; // Fallback nếu backend chỉ gửi coords
+
             if (coords && coords.latitude && coords.longitude) {
                 const newPos = [coords.latitude, coords.longitude];
                 setPosition(newPos);
+                console.log('[RealTimeBus] Bus moved to:', newPos);
                 try {
                     map.panTo(newPos, { animate: true, duration: 0.6 });
                 } catch (e) {
                     console.error('[RouteMap] Pan error:', e);
                 }
+            } else {
+                console.warn('[RealTimeBus] Invalid coords data:', data);
             }
         };
 
+        console.log('[RealTimeBus] Registering new listener for trip:', tripId);
         onBusLocationChanged(handleLocationUpdate);
+        listenerRegisteredRef.current = true;
+        currentTripIdRef.current = tripId;
 
-        // Cleanup
+        // Cleanup chỉ khi component unmount hoặc tripId thay đổi
         return () => {
+            console.log('[RealTimeBus] Cleanup listener for trip:', tripId);
             offEvent('bus:location_changed');
+            listenerRegisteredRef.current = false;
+            currentTripIdRef.current = null;
         };
-    }, [tripId, isTracking, map]);
+    }, [tripId, map]); // CHỈ phụ thuộc vào tripId và map (vì map được dùng trong handleLocationUpdate)
 
-    if (!position) return null;
+    // Ẩn marker khi không tracking, nhưng KHÔNG cleanup listener
+    if (!isTracking || !position) return null;
 
     return (
         <Marker position={position} icon={busIcon}>
@@ -94,7 +132,7 @@ function RealTimeBus({ tripId, isTracking = false }) {
    - isTracking: boolean
    - currentStationIndex: number
 ============================================================ */
-export default function RouteMapWithBackend({
+const RouteMapWithBackend = React.memo(function RouteMapWithBackend({
     center = [10.77, 106.68],
     zoom = 14,
     routeShape = null, // Backend route shape
@@ -104,6 +142,17 @@ export default function RouteMapWithBackend({
     currentStationIndex = -1,
 }) {
     const [polylineCoords, setPolylineCoords] = useState([]);
+
+    // Debug: Log props khi component mount/update
+    useEffect(() => {
+        console.log('[RouteMapWithBackend] Props:', {
+            tripId,
+            isTracking,
+            currentStationIndex,
+            stopsCount: stops.length,
+            hasRouteShape: !!routeShape?.coordinates
+        });
+    }, [tripId, isTracking, currentStationIndex, stops.length, routeShape]);
 
     // Convert backend coordinates [[lng, lat],...] -> [[lat, lng],...] cho Leaflet
     useEffect(() => {
@@ -190,4 +239,15 @@ export default function RouteMapWithBackend({
             </MapContainer>
         </div>
     );
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison để chỉ re-render khi thực sự cần thiết
+    return (
+        prevProps.tripId === nextProps.tripId &&
+        prevProps.isTracking === nextProps.isTracking &&
+        prevProps.currentStationIndex === nextProps.currentStationIndex &&
+        prevProps.stops === nextProps.stops &&  // Reference equality
+        prevProps.routeShape === nextProps.routeShape  // Reference equality
+    );
+});
+
+export default RouteMapWithBackend;
