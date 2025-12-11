@@ -801,8 +801,18 @@ module.exports = (io) => {
                         return socket.emit('trip:error', 'Không thể kết thúc chuyến đi chưa bắt đầu.');
                     }
 
-                    if (socket.trackingState.nextStationIndex !== socket.routeStops.length)
-                        return socket.emit('trip:error', 'Không thể kết thúc chuyến đi khi chưa tới trạm cuối');
+                    // VALIDATION: Cho phép kết thúc khi đang ở trạm cuối VÀ đã TỚI
+                    // nextStationIndex chỉ tăng khi RỜI trạm, không phải khi TỚI
+                    const totalStations = socket.routeStops.length;
+                    const currentIndex = socket.trackingState.nextStationIndex;
+                    const hasArrivedAtCurrent = socket.trackingState.hasNotifiedArrived;
+                    
+                    const isAtFinalStationAndArrived = (currentIndex === totalStations - 1) && hasArrivedAtCurrent;
+                    
+                    if (!isAtFinalStationAndArrived) {
+                        const stationsLeft = totalStations - currentIndex - (hasArrivedAtCurrent ? 1 : 0);
+                        return socket.emit('trip:error', `Không thể kết thúc chuyến đi. Còn ${stationsLeft} trạm chưa đi qua.`);
+                    }
 
                     // 1. Cập nhật CSDL
                     // Dùng await vì đây là tác vụ quan trọng
