@@ -1,9 +1,12 @@
-import api from './api';
+// src/services/authService.js
+import { logOut as apiLogOut, refreshToken as apiRefreshToken, signIn as apiSignIn, signUp as apiSignUp } from '../api/apiClient';
+import { connectSocket, disconnectSocket } from './socketService'; // Thêm Socket.IO
+import api from '../api/apiClient';
 
 /**
- * Logs in the user by sending credentials to the backend.
- * @param {object} credentials - { username, password } or { email, password }
- * @returns {Promise<object>} The data from the API response.
+ * Đăng nhập (alias cho signIn - dành cho driver frontend)
+ * @param {Object} credentials - { username, password }
+ * @returns {Promise<Object>} - { token, user }
  */
 export const login = async (credentials) => {
   try {
@@ -11,17 +14,19 @@ export const login = async (credentials) => {
     
     if (response.data && response.data.accessToken) {
       const { accessToken, data } = response.data;
+      const token = accessToken;
       
       console.log("Login success:", response.data);
 
-      localStorage.setItem('token', accessToken);
-      if (data && data.user) {
+      if (token && data?.user) {
+        localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Kết nối Socket.IO ngay sau khi đăng nhập thành công
+        connectSocket();
       }
-      
-      return response.data;
-    } else {
-      throw new Error('Login did not return an access token.');
+
+      return { token, user: data?.user };
     }
   } catch (error) {
     console.error('Login failed in authService:', error);
@@ -29,18 +34,37 @@ export const login = async (credentials) => {
   }
 };
 
-// Alias for driver frontend compatibility
-export const signIn = login;
-
 /**
- * Mock login for offline demonstration
+ * Đăng nhập
+ * @param {Object} credentials - { username, password }
+ * @returns {Promise<Object>} - { token, user }
  */
-export const loginDemo = () => {
-  const mockToken = 'demo-token-12345';
-  const mockUser = { username: 'demo_parent', name: 'Demo Parent' };
-  localStorage.setItem('token', mockToken);
-  localStorage.setItem('user', JSON.stringify(mockUser));
-  return Promise.resolve({ success: true, user: mockUser, token: mockToken });
+export const signIn = async (credentials) => {
+  try {
+    console.log('Sending login request with:', credentials);
+    const response = await apiSignIn(credentials);
+    console.log('Login response:', response.data);
+
+    const { accessToken, data } = response.data;
+    const token = accessToken;
+
+    if (token && data?.user) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Kết nối Socket.IO ngay sau khi đăng nhập thành công
+      connectSocket();
+    }
+
+    return { token, user: data.user };
+  } catch (error) {
+    console.error('Lỗi đăng nhập:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -54,6 +78,8 @@ export const logout = async () => {
   } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Ngắt kết nối Socket.IO khi logout
+    disconnectSocket();
   }
 };
 
@@ -99,7 +125,7 @@ const authService = {
   getToken,
   getCurrentUser,
   isAuthenticated,
-  loginDemo,
 };
 
 export default authService;
+

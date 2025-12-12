@@ -1,21 +1,8 @@
 // src/services/studentService.js
-import api, { getMyStudents as apiGetMyStudents } from '../api/apiClient';
+import api from '../api/apiClient';
 
-/**
- * Lấy danh sách học sinh của phụ huynh hiện tại
- * @returns {Promise<Array>} - students array
- */
-/**
- * Backend returns: { status: 'success', data: [students] }
- */
-export const getMyStudents = async () => {
-  try {
-    const response = await apiGetMyStudents();
-    return response.data.data || [];
-  } catch (error) {
-    throw new Error(error.message || 'Không thể lấy danh sách học sinh');
-  }
-};
+// getMyStudents - API đã bị xóa, không còn sử dụng
+// Nếu cần lấy students của trip, dùng tripService.getTripStudents(tripId)
 
 /**
  * Đăng ký dữ liệu khuôn mặt cho học sinh (Face ID)
@@ -123,7 +110,6 @@ export const deleteStudent = async (studentId) => {
 };
 
 export default {
-  getMyStudents,
   registerStudentFace,
   getStudent,
   getAllStudents,

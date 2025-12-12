@@ -5,9 +5,10 @@ import api, {
 } from '../api/apiClient';
 
 /**
- * Lấy thông tin route của schedule
- * @param {string} scheduleId - ID của schedule
- * @returns {Promise<Object>} - route object with stations
+ * Lấy route shape để vẽ map
+ * Flow: GET /trips/my-schedule → lấy scheduleId → GET /schedules/:scheduleId/route
+ * @param {string} scheduleId - ID của schedule (từ my-schedule response)
+ * @returns {Promise<Object>} - { routeName, shape, stops, distance, duration }
  */
 export const getScheduleRoute = async (scheduleId) => {
   try {

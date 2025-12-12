@@ -1,7 +1,7 @@
 // src/hooks/useParentData.js
 import { useCallback, useEffect, useState } from 'react';
 import { getMyNotifications } from '../services/notificationService';
-import { getMyStudents } from '../services/studentService';
+// getMyStudents - API đã bị xóa
 
 /**
  * Custom hook để lấy dữ liệu cho phụ huynh
@@ -9,7 +9,7 @@ import { getMyStudents } from '../services/studentService';
 export const useParentData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState([]); // Giữ lại để tương thích
   const [notifications, setNotifications] = useState([]);
 
   const fetchParentData = useCallback(async () => {
@@ -17,13 +17,8 @@ export const useParentData = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch students và notifications song song
-      const [studentsData, notificationsData] = await Promise.all([
-        getMyStudents(),
-        getMyNotifications().catch(() => []) // Không fail nếu notifications lỗi
-      ]);
-
-      setStudents(studentsData);
+      // Chỉ fetch notifications, students lấy từ trip data
+      const notificationsData = await getMyNotifications().catch(() => []);
       setNotifications(notificationsData);
 
     } catch (err) {
@@ -52,3 +47,4 @@ export const useParentData = () => {
 };
 
 export default useParentData;
+

@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ParentLayout from "../components/layout/ParentLayout";
+import { RouteTrackingProvider } from "../context/RouteTrackingContext";
 
 // --- Lazy loaded pages ---
 
@@ -13,6 +14,12 @@ const ParentProfile = lazy(() => import("../pages/parent/ParentProfile"));
 const ParentSettings = lazy(() => import("../pages/parent/ParentSettings"));
 const Login_Parents = lazy(() => import("../pages/parent/Login_Parents"));
 
+// Driver pages
+const DriverHome = lazy(() => import("../pages/driver/DriverHome"));
+const DriverDailySchedule = lazy(() => import("../pages/driver/DriverDailySchedule"));
+const DriverContacts = lazy(() => import("../pages/driver/DriverContacts"));
+const DriverOperations = lazy(() => import("../pages/driver/DriverOperations"));
+
 // Shared pages
 const Login = lazy(() => import("../pages/shared/login"));
 const NotFound = lazy(() => import("../pages/shared/NotFound"));
@@ -20,7 +27,7 @@ const NotFound = lazy(() => import("../pages/shared/NotFound"));
 // Loading component
 const Loader = () => (
   <div className="fixed inset-0 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center z-50">
-    <div className="text-white text-3xl font-bold animate-pulse">SchoolBus Tracker</div>
+    <div className="text-white text-3xl font-bold animate-pulse">Safe to School</div>
   </div>
 );
 
@@ -41,6 +48,13 @@ export default function AppRoutes() {
           <Route path="profile" element={<ParentProfile />} />
           <Route path="settings" element={<ParentSettings />} />
         </Route>
+
+        {/* ===== DRIVER ROUTES ===== */}
+        <Route path="/driver" element={<RouteTrackingProvider><DriverHome /></RouteTrackingProvider>} />
+        <Route path="/driver/home" element={<RouteTrackingProvider><DriverHome /></RouteTrackingProvider>} />
+        <Route path="/driver/schedule" element={<DriverDailySchedule />} />
+        <Route path="/driver/contacts" element={<DriverContacts />} />
+        <Route path="/driver/operations" element={<DriverOperations />} />
 
         {/* ===== ROOT REDIRECT ===== */}
         <Route path="/" element={<Navigate to="/parent/login" replace />} />

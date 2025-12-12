@@ -186,16 +186,7 @@ import api, {
   updateTrip as apiUpdateTrip,
 } from '../api/apiClient';
 
-// Import tất cả mock response đã chuẩn bị
-import {
-  mockMyScheduleResponse,
-  mockGetTripResponse,
-  mockGetTripStudentsResponse,
-  mockCheckInResponse,
-  mockCheckInWithFaceResponse,
-  mockMarkAsAbsentResponse,
-  mockGetAllTripsResponse,
-} from '../mocks/mockTripResponses';
+// Mock data imports đã bị loại bỏ - chỉ dùng API thực
 
 /**
  * Lấy tất cả chuyến đi (Manager/Admin)
@@ -204,11 +195,10 @@ import {
 export const getAllTrips = async () => {
   try {
     const response = await apiGetAllTrips();
-    // Backend trả về response.data.data là array trips trực tiếp
     return response.data.data || [];
   } catch (error) {
-    console.warn('[tripService] getAllTrips failed → using mock data', error.message || error);
-    return mockGetAllTripsResponse.data.trips || mockGetAllTripsResponse.data;
+    console.error('[tripService] getAllTrips failed:', error.message || error);
+    throw new Error(error.response?.data?.message || 'Không thể lấy danh sách chuyến đi');
   }
 };
 
@@ -219,11 +209,10 @@ export const getAllTrips = async () => {
 export const getTrip = async (tripId) => {
   try {
     const response = await apiGetTrip(tripId);
-    // Backend trả về response.data.data là trip object trực tiếp
     return response.data.data || null;
   } catch (error) {
-    console.warn(`[tripService] getTrip(${tripId}) failed → using mock`, error.message || error);
-    return mockGetTripResponse.data.trip;
+    console.error(`[tripService] getTrip(${tripId}) failed:`, error.message || error);
+    throw new Error(error.response?.data?.message || 'Không tìm thấy chuyến đi');
   }
 };
 
@@ -234,11 +223,10 @@ export const getTrip = async (tripId) => {
 export const getTripStudents = async (tripId) => {
   try {
     const response = await api.get(`/trips/${tripId}/students`);
-    // Backend trả về response.data.data là array studentStops trực tiếp
     return response.data.data || [];
   } catch (error) {
-    console.warn(`[tripService] getTripStudents(${tripId}) failed → using mock`, error.message || error);
-    return mockGetTripStudentsResponse.data.students;
+    console.error(`[tripService] getTripStudents(${tripId}) failed:`, error.message || error);
+    throw new Error(error.response?.data?.message || 'Không thể lấy danh sách học sinh');
   }
 };
 
@@ -249,11 +237,10 @@ export const getTripStudents = async (tripId) => {
 export const getMySchedule = async () => {
   try {
     const response = await api.get('/trips/my-schedule');
-    // Backend trả về response.data.data là array trips của driver
     return response.data.data || [];
   } catch (error) {
-    console.warn('[tripService] getMySchedule failed → using mock schedule', error.message || error);
-    return mockMyScheduleResponse.data;
+    console.error('[tripService] getMySchedule failed:', error.message || error);
+    throw new Error(error.response?.data?.message || 'Không thể lấy lịch trình');
   }
 };
 
@@ -264,11 +251,10 @@ export const getMySchedule = async () => {
 export const createTrip = async (tripData) => {
   try {
     const response = await apiCreateTrip(tripData);
-    // Factory trả về response.data.data là trip object trực tiếp
     return response.data.data || null;
   } catch (error) {
-    console.warn('[tripService] createTrip failed → returning mock', error.message || error);
-    return mockGetTripResponse.data.trip;
+    console.error('[tripService] createTrip failed:', error.message || error);
+    throw new Error(error.response?.data?.message || 'Tạo chuyến đi thất bại');
   }
 };
 
@@ -279,11 +265,10 @@ export const createTrip = async (tripData) => {
 export const updateTrip = async (tripId, tripData) => {
   try {
     const response = await apiUpdateTrip(tripId, tripData);
-    // updateTrip custom trả về response.data.data.data là trip object
     return response.data.data?.data || response.data.data || null;
   } catch (error) {
-    console.warn(`[tripService] updateTrip(${tripId}) failed → returning mock`, error.message || error);
-    return mockGetTripResponse.data.trip;
+    console.error(`[tripService] updateTrip(${tripId}) failed:`, error.message || error);
+    throw new Error(error.response?.data?.message || 'Cập nhật chuyến đi thất bại');
   }
 };
 
@@ -308,13 +293,8 @@ export const checkIn = async (tripId, data) => {
     const response = await apiCheckIn(tripId, data);
     return response.data.data;
   } catch (error) {
-    console.warn(`[tripService] checkIn failed → mock success`, error.message || error);
-    return {
-      ...mockCheckInResponse.data,
-      studentId: data.studentId,
-      stationId: data.stationId,
-      checkInTime: new Date().toISOString(),
-    };
+    console.error(`[tripService] checkIn failed:`, error.message || error);
+    throw new Error(error.response?.data?.message || 'Check-in thất bại');
   }
 };
 
@@ -333,8 +313,8 @@ export const checkInWithFace = async (tripId, imageFile, stationId) => {
 
     return response.data.data;
   } catch (error) {
-    console.warn('[tripService] checkInWithFace failed → mock face recognition success', error.message || error);
-    return mockCheckInWithFaceResponse.data;
+    console.error('[tripService] checkInWithFace failed:', error.message || error);
+    throw new Error(error.response?.data?.message || 'Check-in bằng Face ID thất bại');
   }
 };
 
@@ -346,13 +326,109 @@ export const markAsAbsent = async (tripId, studentId) => {
     const response = await apiMarkAsAbsent(tripId, studentId);
     return response.data.data;
   } catch (error) {
-    console.warn(`[tripService] markAsAbsent(${studentId}) failed → mock absent`, error.message || error);
-    return {
-      ...mockMarkAsAbsentResponse.data,
-      studentId,
-      markedAt: new Date().toISOString(),
-    };
+    console.error(`[tripService] markAsAbsent(${studentId}) failed:`, error.message || error);
+    throw new Error(error.response?.data?.message || 'Đánh dấu vắng mặt thất bại');
   }
+};
+
+/**
+ * Helper: Transform backend trip data sang UI format
+ * @param {Object} trip - Raw trip data từ getTrip API
+ * @returns {Object} - Transformed data cho UI
+ */
+export const transformTripToUIFormat = (trip) => {
+  if (!trip) return null;
+
+  // Tạo map stationId -> students từ studentStops
+  const stationStudentsMap = {};
+  console.log('[tripService] studentStops count:', trip.studentStops?.length || 0);
+
+  (trip.studentStops || []).forEach(ss => {
+    const stationId = String(ss.stationId?._id || ss.stationId);
+    console.log('[tripService] studentStop stationId:', stationId, 'studentId:', ss.studentId?._id || ss.studentId);
+
+    if (!stationStudentsMap[stationId]) {
+      stationStudentsMap[stationId] = [];
+    }
+    stationStudentsMap[stationId].push({
+      id: ss.studentId?._id || ss.studentId,
+      name: ss.studentId?.name || 'N/A',
+      grade: ss.studentId?.grade || '',
+      status: ss.action, // PENDING, PICKED_UP, DROPPED_OFF, ABSENT
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${ss.studentId?._id || ss.studentId}`
+    });
+  });
+
+  console.log('[tripService] stationStudentsMap keys:', Object.keys(stationStudentsMap));
+
+  // Transform orderedStops thành stations array cho map
+  const stations = (trip.routeId?.orderedStops || []).map((stop, idx) => {
+    // Backend returns [lng, lat], Leaflet needs [lat, lng]
+    const coords = stop.address?.location?.coordinates;
+    const position = coords && coords.length === 2
+      ? [coords[1], coords[0]]
+      : [10.77, 106.68]; // Default HCM
+
+    // Lấy thời gian từ scheduleId.stopTimes nếu có
+    const stopTime = trip.scheduleId?.stopTimes?.[idx];
+    const time = stopTime?.arrivalTime || '--:--';
+
+    const stationId = String(stop._id);
+
+    return {
+      id: stationId,
+      name: stop.name || `Trạm ${idx + 1}`,
+      position,
+      time,
+      address: stop.address?.fullAddress || '',
+      // Thêm danh sách học sinh tại trạm này
+      students: stationStudentsMap[stationId] || []
+    };
+  });
+
+  console.log('[tripService] orderedStops station IDs:', stations.map(s => s.id));
+
+  // Transform studentStops thành students array (flat list)
+  const students = (trip.studentStops || []).map(ss => ({
+    id: ss.studentId?._id || ss.studentId,
+    name: ss.studentId?.name || 'N/A',
+    grade: ss.studentId?.grade || '',
+    stationId: String(ss.stationId?._id || ss.stationId),
+    stationName: ss.stationId?.name || '',
+    status: ss.action, // PENDING, PICKED_UP, DROPPED_OFF, ABSENT
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${ss.studentId?._id || ss.studentId}`
+  }));
+
+  // Tính số học sinh đã hoàn thành (PICKED_UP hoặc DROPPED_OFF)
+  const completedStudents = (trip.studentStops || []).filter(
+    ss => ss.action === 'PICKED_UP' || ss.action === 'DROPPED_OFF'
+  ).length;
+
+  // Tính số học sinh vắng mặt
+  const absentStudents = (trip.studentStops || []).filter(
+    ss => ss.action === 'ABSENT'
+  ).length;
+
+  return {
+    id: trip._id,
+    name: trip.routeId?.name || 'Chuyến không tên',
+    direction: trip.direction, // PICK_UP | DROP_OFF
+    status: trip.status, // NOT_STARTED | IN_PROGRESS | COMPLETED | CANCELLED
+    tripDate: trip.tripDate,
+    busId: trip.busId?._id || trip.busId,
+    busLicensePlate: trip.busId?.licensePlate || 'N/A',
+    driverId: trip.driverId?._id || trip.driverId,
+    routeShape: trip.routeId?.shape || null,
+    distanceMeters: trip.routeId?.distanceMeters || 0,
+    durationSeconds: trip.routeId?.durationSeconds || 0,
+    stations,
+    students,
+    totalStudents: trip.studentStops?.length || 0,
+    completedStudents, // Số học sinh đã đón/trả
+    absentStudents, // Số học sinh vắng mặt
+    nextStationIndex: trip.nextStationIndex || 0, // Trạm mục tiêu hiện tại
+    rawData: trip // Giữ lại raw data nếu cần
+  };
 };
 
 export default {
@@ -366,4 +442,5 @@ export default {
   checkIn,
   checkInWithFace,
   markAsAbsent,
+  transformTripToUIFormat,
 };
