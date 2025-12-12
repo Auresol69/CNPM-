@@ -659,7 +659,7 @@ module.exports = (io) => {
                     }
 
                     // Chi nen su dung khi can data len bao cao
-                    // await Location.saveHistory(busId, data.coords);
+                    await Location.saveHistory(busId, data.coords);
                     socket.prevCoords = newCoords;
                 }
 
