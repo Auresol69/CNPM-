@@ -10,6 +10,8 @@ route.get('/', scheduleController.getAllSchedules);
 
 route.post('/', scheduleController.createSchedule);
 
+route.patch('/:id', scheduleController.updateSchedule);
+
 route.patch('/:scheduleId/stopTimes/:stationId/students', scheduleController.AddStudents);
 
 route.get('/:id/route', scheduleController.getScheduleRoute);
