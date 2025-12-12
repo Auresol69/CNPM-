@@ -94,20 +94,30 @@ export default function DriverContacts() {
     const handleReceiveMessage = (message) => {
       console.log('[DriverContacts] ✅ Received message:', message);
 
-      // Determine thread ID based on sender
+      // Determine thread ID and sender type based on message structure
       let threadId;
-      if (message.senderId === 'admin' || !message.senderId) {
-        threadId = 'admin';
+      let senderType;
+
+      // Check if sender is a parent in our contacts list
+      const parentContact = message.senderId
+        ? contacts.find(c => c.parentId === message.senderId)
+        : null;
+
+      if (parentContact) {
+        // Message from a parent
+        threadId = `parent-${parentContact.id}`;
+        senderType = 'parent';
       } else {
-        // Find student by parent ID
-        const student = contacts.find(c => c.parentId === message.senderId);
-        threadId = student ? `parent-${student.id}` : `user-${message.senderId}`;
+        // Message not from a known parent → must be from Admin/Manager
+        // Or message.receiverId is null (meaning it was sent TO admin room)
+        threadId = 'admin';
+        senderType = message.senderId ? 'admin' : 'driver'; // If no senderId, it's echoing our own message
       }
 
       // Add to messages
       const msg = {
         id: message._id || Date.now(),
-        sender: message.senderId ? 'parent' : 'driver',
+        sender: senderType,
         text: message.content,
         time: new Date(message.createdAt || Date.now()).toTimeString().slice(0, 5),
       };
@@ -461,11 +471,21 @@ export default function DriverContacts() {
                   filteredMessages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'driver' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-xs md:max-w-md px-5 py-3 rounded-3xl shadow-lg ${msg.sender === 'driver'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                        : 'bg-gray-200 text-gray-800'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                          : msg.sender === 'admin'
+                            ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white'
+                            : 'bg-gray-200 text-gray-800'
                         }`}>
+                        {msg.sender === 'admin' && (
+                          <p className="text-xs font-semibold text-teal-100 mb-1">Quản lý</p>
+                        )}
                         <p className="text-base">{msg.text}</p>
-                        <p className={`text-xs mt-2 opacity-80 ${msg.sender === 'driver' ? 'text-indigo-200' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-2 opacity-80 ${msg.sender === 'driver'
+                            ? 'text-indigo-200'
+                            : msg.sender === 'admin'
+                              ? 'text-teal-100'
+                              : 'text-gray-500'
+                          }`}>
                           {msg.time}
                         </p>
                       </div>

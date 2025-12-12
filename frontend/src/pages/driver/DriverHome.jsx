@@ -327,13 +327,24 @@ export default function DriverHome() {
           return;
         }
 
-        // 3.2. Tìm chuyến đang chạy, hoàn thành, hoặc sắp tới
-        const now = new Date();
-        const activeTrip = schedule.find(trip =>
-          trip.status === 'IN_PROGRESS' ||
-          trip.status === 'COMPLETED' ||  // ← GET COMPLETED TRIPS TOO!
-          (trip.status === 'NOT_STARTED' && new Date(trip.tripDate) <= now)
-        ) || schedule[0];
+        // 3.2. Sắp xếp trips theo ưu tiên status:
+        // 1. IN_PROGRESS (đang chạy) - ưu tiên cao nhất
+        // 2. NOT_STARTED (chưa bắt đầu)
+        // 3. COMPLETED (đã hoàn thành) - ưu tiên thấp nhất
+        const statusPriority = {
+          'IN_PROGRESS': 1,
+          'NOT_STARTED': 2,
+          'COMPLETED': 3
+        };
+
+        const sortedTrips = [...schedule].sort((a, b) => {
+          const priorityA = statusPriority[a.status] || 99;
+          const priorityB = statusPriority[b.status] || 99;
+          return priorityA - priorityB;
+        });
+
+        // Lấy trip có ưu tiên cao nhất
+        const activeTrip = sortedTrips[0];
 
         if (activeTrip?._id) {
           // 3.3. Gọi getTrip để lấy full details (routeId.shape, orderedStops, studentStops)
