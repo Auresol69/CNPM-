@@ -1,0 +1,44 @@
+/* Fix z-index cho Leaflet */
+.leaflet-pane {
+  z-index: 400 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1000 !important;
+}
+
+/* Custom marker styles */
+.custom-station-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-station-marker div {
+  transition: transform 0.2s ease;
+}
+
+.custom-station-marker:hover div {
+  transform: scale(1.1);
+}
+
+/* Popup styles */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px !important;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+
+/* Polyline animation */
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
