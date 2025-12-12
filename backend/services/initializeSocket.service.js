@@ -290,8 +290,15 @@ module.exports = (io) => {
                     if (senderRole === 'Parent' || senderRole === 'Driver') {
                         const receiver = await User.findById(receiverId).select('role');
 
-                        if (!receiver)
-                            return socket.emit('chat:error', 'Người nhận không tồn tại');
+                        if (!receiver) {
+                            const newMessage = await Message.create({
+                                senderId: senderId,
+                                receiverId: null,
+                                content: content
+                            });
+
+                            io.to('receive_notification').emit('chat:receive_message', newMessage);
+                        }
 
                         if (receiver.role === 'Driver' || receiver.role === 'Parent') {
                             const newMessage = await Message.create({
@@ -303,13 +310,7 @@ module.exports = (io) => {
                             return io.to(`user:${receiverId}`).emit('chat:receive_message', newMessage);
                         }
 
-                        const newMessage = await Message.create({
-                            senderId: senderId,
-                            receiverId: null,
-                            content: content
-                        });
-
-                        io.to('receive_notification').emit('chat:receive_message', newMessage);
+                        return socket.emit('chat:error', 'Người nhận không tồn tại');
                     }
                     else if (senderRole === 'Admin' || senderRole === 'Manager') {
                         const newMessage = await Message.create({
