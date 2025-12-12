@@ -563,9 +563,8 @@ module.exports = (io) => {
             // - Trạm 2: 66m, Trạm 4: 61m → cần ARRIVED >= 70m
             // Công thức: APPROACHING + DEPARTED < khoảng cách min giữa các trạm (150m)
             // → 80m + 80m = 160m > 150m ❌ nhưng phải chấp nhận vì route không đi sát trạm
-            const DISTANCE_APPROACHING = 0.1;  // 100m: sắp tới
-            const DISTANCE_ARRIVED = 0.08;     // 80m: đã tới (phải >= 66m của Trạm 2)
-            const DISTANCE_DEPARTED = 0.1;     // 100m: đã rời đi
+            const DISTANCE_APPROACHING = 0.15;  // 150m: sắp tới
+            const DISTANCE_DEPARTED = 0.12;     // 120m: đã rời đi
             const ROUTE_DEVIATION_THRESHOLD = 50; // m
 
             // QUAN TRỌNG: Không cho join bất kỳ phòng nào cả
@@ -692,7 +691,14 @@ module.exports = (io) => {
                         });
                 }
 
-                if (distance <= DISTANCE_ARRIVED && !state.hasNotifiedArrived) {
+
+                // ARRIVED: Dùng buffer polygon (100m)
+                const stationPoint = turf.point([targetStation.lng, targetStation.lat]);
+                const busPoint = turf.point([newCoords.longitude, newCoords.latitude]);
+                const buffer = turf.buffer(stationPoint, 0.1, { units: 'kilometers' }); // 100m
+                const isArrived = turf.booleanPointInPolygon(busPoint, buffer);
+
+                if (isArrived && !state.hasNotifiedArrived) {
                     io.to(`trip_${validatedTripId}`).emit('bus:arrived_at_station', {
                         stationId: targetStation.id,
                         arrivalTime: new Date()
@@ -703,10 +709,6 @@ module.exports = (io) => {
                     await Trip.updateOne(
                         {
                             _id: validatedTripId,
-
-                            // BUG SIÊU KHỦNG KHIẾP (không ghi nhận những trạm không có học sinh)
-                            // 'studentStops.stationId': targetStation.id,
-
                             'actualStopTimes.stationId': { $ne: targetStation.id }
                         },
                         {
@@ -726,7 +728,9 @@ module.exports = (io) => {
                     });
                 }
 
-                if (distance >= DISTANCE_DEPARTED && state.hasNotifiedArrived) {
+                // DEPARTED: Ra khỏi buffer polygon và cách trạm >= DISTANCE_DEPARTED
+                const isOutsideBuffer = !turf.booleanPointInPolygon(busPoint, buffer);
+                if (isOutsideBuffer && distance >= DISTANCE_DEPARTED && state.hasNotifiedArrived) {
                     io.to(`trip_${validatedTripId}`).emit('bus:departed_from_station', {
                         stationId: targetStation.id,
                         departureTime: new Date()
@@ -737,7 +741,6 @@ module.exports = (io) => {
                     state.hasNotifiedArrived = false;
 
                     // Emit ngay khi nextStationIndex thay đổi
-                    // để client cập nhật kịp luck (không phải chờ coords thay đổi)
                     io.to(`trip_${validatedTripId}`).emit('bus:location_changed', {
                         coords: newCoords,
                         nextStationIndex: state.nextStationIndex,

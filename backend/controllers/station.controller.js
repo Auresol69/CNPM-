@@ -21,12 +21,14 @@ exports.createStation = catchAsync(async (req, res, next) => {
         coordinates: [parseFloat(lng), parseFloat(lat)]
     };
 
+
     // Chỉ cần 1 trạm ở gần thì cảnh báo
+    // $maxDistance phải > APPROACHING + DEPARTED = 150m + 120m = 270m
     const existingStation = await Station.findOne({
         'address.location': {
             $near: {
                 $geometry: newLocation,
-                $maxDistance: 250 // m (phải > APPROACHING + DEPARTED = 200m)
+                $maxDistance: 270 // m (phải > APPROACHING + DEPARTED = 270m)
             }
         }
     });
