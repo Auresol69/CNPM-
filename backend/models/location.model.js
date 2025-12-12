@@ -20,7 +20,7 @@ const locationSchema = new mongoose.Schema({
         default: Date.now,
         index: -1, // TTL bắt buộc phải là một index đơn lẻ (single-field index)
         //  hoặc một index riêng biệt
-        expires: '7d' // TTL
+        expires: '30d' // TTL: lưu trữ 30 ngày
     }
 },
     {
