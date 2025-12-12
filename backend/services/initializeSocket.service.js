@@ -297,7 +297,7 @@ module.exports = (io) => {
                                 content: content
                             });
 
-                            io.to('receive_notification').emit('chat:receive_message', newMessage);
+                            return io.to('receive_notification').emit('chat:receive_message', newMessage);
                         }
 
                         if (receiver.role === 'Driver' || receiver.role === 'Parent') {
